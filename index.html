@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<title>태핑</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- 1. 시작 설정 -->
+  <section class="screen onboard" id="onboard" aria-labelledby="ob-title">
+    <div class="ob-head">
+      <p class="en-label">TAPPING</p>
+      <h1 id="ob-title">고르지 말고,<br>넘기세요.</h1>
+      <p class="lead">세 가지만 정하면 바로 시작해요.</p>
+    </div>
+
+    <fieldset class="q">
+      <legend>성별</legend>
+      <div class="seg" data-key="gender" data-single>
+        <button type="button" data-v="men">남성</button>
+        <button type="button" data-v="women">여성</button>
+        <button type="button" data-v="all">전체</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="q">
+      <legend>카테고리 <span class="hint">여러 개 선택</span></legend>
+      <div class="chips" data-key="cats">
+        <button type="button" data-v="all">전체</button>
+        <button type="button" data-v="outer">아우터</button>
+        <button type="button" data-v="top">상의</button>
+        <button type="button" data-v="bottom">하의</button>
+        <button type="button" data-v="shoes">신발</button>
+        <button type="button" data-v="bag">가방</button>
+        <button type="button" data-v="hat">모자</button>
+        <button type="button" data-v="accessory">액세서리</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="q">
+      <legend>가격 <span class="hint">여러 개 선택</span></legend>
+      <div class="chips" data-key="prices">
+        <button type="button" data-v="all">전체</button>
+        <button type="button" data-v="0">~10만</button>
+        <button type="button" data-v="1">10~30만</button>
+        <button type="button" data-v="2">30~70만</button>
+        <button type="button" data-v="3">70만~</button>
+      </div>
+    </fieldset>
+
+    <div class="ob-foot">
+      <p class="count" id="ob-count" aria-live="polite"></p>
+      <button class="btn" id="start" type="button">시작하기</button>
+    </div>
+  </section>
+
+  <!-- 2. 피드 -->
+  <section class="screen feed" id="feed" hidden aria-label="상품 피드">
+    <header class="topbar">
+      <span class="wordmark">태핑</span>
+      <div class="top-actions">
+        <button class="icon-btn" id="open-likes" type="button" aria-label="찜 목록">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
+          <span class="badge-count" id="like-count">0</span>
+        </button>
+        <button class="icon-btn" id="open-settings" type="button" aria-label="설정 바꾸기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="stage" id="stage" role="button" tabindex="0" aria-label="화면을 탭하면 다음 상품">
+      <div class="card" id="card">
+        <div class="photo"><img id="photo" alt="" referrerpolicy="no-referrer" decoding="async"></div>
+        <div class="info">
+          <span class="collab" id="collab" hidden>COLLAB</span>
+          <p class="brand" id="brand"></p>
+          <p class="title" id="title"></p>
+          <p class="price"><span id="price"></span><span class="mall" id="mall"></span></p>
+        </div>
+      </div>
+      <p class="coach" id="coach">빈 곳을 탭하면 다음 상품</p>
+    </div>
+
+    <div class="actions" aria-label="상품 반응">
+      <button class="act like" id="btn-like" type="button" aria-label="좋아요 (L)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
+      </button>
+      <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>
+      </button>
+      <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5 8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- 3. 찜 목록 -->
+  <div class="sheet" id="likes" hidden role="dialog" aria-modal="true" aria-labelledby="likes-title">
+    <div class="sheet-panel">
+      <div class="sheet-head">
+        <h2 id="likes-title">찜한 상품</h2>
+        <button class="icon-btn" id="close-likes" type="button" aria-label="닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="like-grid" id="like-grid"></div>
+      <p class="empty" id="likes-empty">아직 찜한 상품이 없어요. ♥를 눌러 모아 보세요.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script src="feed.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
