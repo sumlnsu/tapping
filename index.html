@@ -12,7 +12,7 @@
 <div class="app" id="app">
 
   <!-- 1. 시작 설정 -->
-  <section class="screen onboard" id="onboard" aria-labelledby="ob-title">
+  <section class="screen onboard" id="onboard" hidden aria-labelledby="ob-title">
     <div class="ob-head">
       <p class="en-label">TAPPING</p>
       <h1 id="ob-title">고르지 말고,<br>넘기세요.</h1>
@@ -56,6 +56,7 @@
     <div class="ob-foot">
       <p class="count" id="ob-count" aria-live="polite"></p>
       <button class="btn" id="start" type="button">시작하기</button>
+      <button class="link" id="ob-login" type="button" hidden>이미 계정이 있나요? <b>로그인</b></button>
     </div>
   </section>
 
@@ -71,8 +72,18 @@
         <button class="icon-btn" id="open-settings" type="button" aria-label="설정 바꾸기">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
         </button>
+        <button class="icon-btn" id="open-account" type="button" aria-label="로그인">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 19.6c1.3-3.4 4-5.2 7.2-5.2s5.9 1.8 7.2 5.2"/></svg>
+          <span class="avatar" id="acct-initial"></span>
+        </button>
       </div>
     </header>
+
+    <div class="nudge" id="nudge" hidden>
+      <span>로그인하면 취향을 학습해 더 잘 골라 드려요</span>
+      <button class="n-login" id="nudge-login" type="button">로그인</button>
+      <button class="n-close" id="nudge-close" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>
+    </div>
 
     <div class="stage" id="stage" role="button" tabindex="0" aria-label="화면을 탭하면 다음 상품">
       <div class="card" id="card">
@@ -118,10 +129,65 @@
     </div>
   </div>
 
+  <!-- 4. 로그인 · 회원가입 · 내 계정 -->
+  <div class="sheet" id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="sheet-panel auth-panel">
+      <div class="sheet-head">
+        <h2 id="auth-title">로그인</h2>
+        <button class="icon-btn" id="close-auth" type="button" aria-label="닫기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div id="auth-guest">
+        <p class="auth-reason" id="auth-reason"></p>
+        <ul class="perks">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>찜한 상품 저장, 어느 기기에서나 보기</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>싫어요 누른 스타일은 덜 보여 주기</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9Z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/></svg>반응을 학습해 내 취향대로 추천</li>
+        </ul>
+        <div class="seg auth-tabs" role="tablist" aria-label="로그인 또는 회원가입">
+          <button type="button" role="tab" data-mode="login" aria-selected="true">로그인</button>
+          <button type="button" role="tab" data-mode="signup" aria-selected="false">회원가입</button>
+        </div>
+        <form id="auth-form" novalidate>
+          <label class="field"><span>이메일</span><input id="auth-email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@example.com"></label>
+          <label class="field"><span>비밀번호</span><input id="auth-pw" type="password" autocomplete="current-password" placeholder="비밀번호"></label>
+          <label class="field" id="pw2-field" hidden><span>비밀번호 확인</span><input id="auth-pw2" type="password" autocomplete="new-password" placeholder="한 번 더 입력"></label>
+          <label class="check"><input id="auth-keep" type="checkbox" checked><span>자동 로그인</span></label>
+          <p class="form-error" id="auth-error" role="alert"></p>
+          <button class="btn" id="auth-submit" type="submit">로그인</button>
+        </form>
+        <p class="fine">베타 서비스예요. 이메일은 로그인과 찜·취향 저장에만 써요.</p>
+      </div>
+
+      <div id="auth-user" hidden>
+        <div class="me-card">
+          <span class="avatar lg" id="me-initial"></span>
+          <div><b id="me-email"></b><span class="role-badge" id="me-admin" hidden>관리자</span><p id="me-keep"></p></div>
+        </div>
+        <div class="me-stats">
+          <div><b id="me-likes">0</b><span>찜</span></div>
+          <div><b id="me-reacts">0</b><span>반응 (학습에 쓰인 횟수)</span></div>
+        </div>
+        <section class="admin" id="admin" hidden>
+          <h3>관리자 대시보드</h3>
+          <div class="admin-grid" id="admin-grid"></div>
+          <h4>많이 찜한 상품</h4>
+          <ol class="admin-top" id="admin-top"></ol>
+        </section>
+        <button class="btn ghost" id="sign-out" type="button">로그아웃</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="feed.js"></script>
+<script src="account.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

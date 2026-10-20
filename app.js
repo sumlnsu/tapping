@@ -1,26 +1,33 @@
-/* 태핑 v0.1 — 원탭 패션 큐레이션 (서버 없이 동작, 기록은 이 브라우저 localStorage에만 저장) */
+/* 태핑 v0.4 — 원탭 패션 큐레이션
+   · 비로그인: 넘겨 보기 + 구매 링크 (취향 학습 없음)
+   · 로그인: 찜·싫어요·반응 학습 맞춤 추천 → 서버에 저장되어 어느 기기에서나 이어짐 (account.js) */
 (() => {
   'use strict';
 
   const FEED = window.TAPPING_FEED || [];
   const BY_ID = new Map(FEED.map(f => [f.id, f]));
   const $ = id => document.getElementById(id);
+  const acct = window.TP_ACCOUNT;
 
   // ---------- 저장소 (사생활 보호 모드 등에서 실패해도 동작) ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem('tp_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
-    set(k, v) { try { localStorage.setItem('tp_' + k, JSON.stringify(v)); } catch { /* ignore */ } }
+    set(k, v) { try { localStorage.setItem('tp_' + k, JSON.stringify(v)); } catch { /* ignore */ } },
+    del(k) { try { localStorage.removeItem('tp_' + k); } catch { /* ignore */ } }
   };
+  const USER_KEYS = ['likes', 'disliked', 'profile', 'events', 'owner'];   // 로그인한 사람의 기록 → 로그아웃하면 이 기기에서 지움
 
   const ALL_CATS = ['outer', 'top', 'bottom', 'shoes', 'bag', 'hat', 'accessory'];
   const SETTINGS_VERSION = 2;              // v2: 「전체」 칩 도입 → 이전 설정은 무효화하고 다시 고르게 함
   let settings = store.get('settingsV', 0) === SETTINGS_VERSION ? store.get('settings', null) : null;
-  let profile = store.get('profile', { brand: {}, cat: {}, price: {}, mall: {}, collab: {} });
+  const emptyProfile = () => ({ brand: {}, cat: {}, price: {}, mall: {}, collab: {}, n: 0 });
+  let me = null;                           // 로그인한 사용자 (null = 비로그인)
+  let profile = emptyProfile();
   const seen = new Set(store.get('seen', []));
-  const disliked = new Set(store.get('disliked', []));
-  let likes = store.get('likes', []);
-  let events = store.get('events', []);
-  let recent = [];          // 최근 노출 브랜드 (연속 노출 방지)
+  const disliked = new Set();
+  let likes = [], events = [];
+  let pendingAct = null;                   // 비로그인 때 누른 ❤️/👎 → 로그인 직후 이어서 실행
+  let recent = [];                         // 최근 노출 브랜드 (연속 노출 방지)
   let current = null, nextItem = null, shownAt = 0, busy = false;
 
   const priceBucket = p => (p < 100000 ? 0 : p < 300000 ? 1 : p < 700000 ? 2 : 3);
@@ -42,17 +49,17 @@
     return list;
   }
 
-  // ---------- 추천 (1단계: 규칙 기반) ----------
+  // ---------- 추천 (1단계: 규칙 기반, 로그인 사용자만 학습) ----------
   const W = { brand: 1.0, cat: 0.6, price: 0.5, mall: 0.4, collab: 0.5 };
   const keys = f => ({ brand: f.b, cat: f.c, price: priceBucket(f.p), mall: f.m, collab: f.x });
-  const interactions = () => events.filter(e => e.a !== 'skip').length;
+  const interactions = () => Math.max(profile.n || 0, events.filter(e => e.a !== 'skip').length);
 
   function pick() {
     const list = pool();
     if (!list.length) return null;
     const sample = list.length > 600 ? shuffle(list).slice(0, 600) : list;
 
-    // 콜드 스타트: 처음 10번의 반응 전까지는 카테고리·브랜드를 골고루, 콜라보 우선
+    // 콜드 스타트(비로그인 포함): 반응 10번 전까지는 카테고리·브랜드를 골고루, 콜라보 우선
     if (interactions() < 10) {
       const shownCats = events.slice(-12).map(e => BY_ID.get(e.id)?.c);
       const catOrder = [...settings.cats].sort((a, b) => count(shownCats, a) - count(shownCats, b));
@@ -80,20 +87,33 @@
     return best;
   }
 
+  const clamp = v => Math.max(-5, Math.min(5, +v.toFixed(3)));
   function learn(f, delta) {
     const k = keys(f);
-    for (const dim in W) {
-      const v = (profile[dim][k[dim]] || 0) + delta;
-      profile[dim][k[dim]] = Math.max(-5, Math.min(5, +v.toFixed(3)));
-    }
-    store.set('profile', profile);
+    for (const dim in W) profile[dim][k[dim]] = clamp((profile[dim][k[dim]] || 0) + delta);
   }
 
-  function logEvent(a) {
-    if (!current) return;
-    events.push({ id: current.id, a, t: Date.now(), dwell: Date.now() - shownAt });
+  // 로그인 상태의 반응만 기록·학습 → 이 기기 + 서버(찜·취향 1줄, 반응 기록)
+  function record(f, a, delta, dwell = 0) {
+    if (!me || !f) return;
+    learn(f, delta);
+    if (a !== 'skip') profile.n = (profile.n || 0) + 1;
+    events.push({ id: f.id, a, t: Date.now(), dwell });
     if (events.length > 3000) events = events.slice(-3000);
+    acct.track(eventRow(f, a, dwell, Date.now()));
+    persist();
+  }
+  const eventRow = (f, a, dwell, t) => ({ item_id: f.id, ev: a, brand: f.b, cat: f.c, price: Math.round(f.p), dwell_ms: dwell || 0, created_at: new Date(t).toISOString() });
+  function saveLocal() {
+    store.set('likes', likes);
+    store.set('disliked', [...disliked].slice(-5000));
+    store.set('profile', profile);
     store.set('events', events);
+  }
+  function persist() {
+    if (!me) return;
+    saveLocal();
+    acct.saveState({ likes, disliked: [...disliked].slice(-5000), profile, settings });
   }
 
   // ---------- 화면 ----------
@@ -111,8 +131,7 @@
     $('price').textContent = won(f.p, f.e);
     $('mall').textContent = f.m;
     $('collab').hidden = !f.x;
-    $('btn-like').classList.toggle('on', likes.includes(f.id));
-    $('btn-like').setAttribute('aria-pressed', String(likes.includes(f.id)));
+    setLikeBtn(likes.includes(f.id));
     // 다음 상품 미리 받아 두기
     nextItem = pick();
     if (nextItem) { const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = nextItem.im; }
@@ -135,51 +154,52 @@
   }
 
   // ---------- 행동 ----------
+  const dwell = () => Date.now() - shownAt;
   function onSkip() {
     if (!current) return;
     hideCoach();
-    logEvent('skip');
-    learn(current, -0.15);
+    if (me) record(current, 'skip', -0.15, dwell()); else maybeNudge();
     advance('leave-next');
   }
   // 찜은 하트만 켜고 끄며 다음 상품으로 넘어가지 않는다 (넘기기는 화면 탭으로만)
   function onLike() {
     if (!current) return;
+    if (!me) return askLogin('like');
     pop('btn-like');
-    const liked = likes.includes(current.id);
-    if (liked) {
-      likes = likes.filter(id => id !== current.id);
-      logEvent('unlike');
-      learn(current, -1);                 // 찜 취소 시 학습도 되돌림
-      toast('찜을 취소했어요');
-    } else {
-      likes.unshift(current.id);
-      logEvent('like');
-      learn(current, 1);
-      navigator.vibrate?.(12);
-      toast('찜 목록에 담았어요');
-    }
-    store.set('likes', likes);
+    const f = current, liked = likes.includes(f.id);
+    if (liked) likes = likes.filter(id => id !== f.id); else likes.unshift(f.id);
+    record(f, liked ? 'unlike' : 'like', liked ? -1 : 1, dwell());   // 찜 취소 시 학습도 되돌림
+    if (!liked) navigator.vibrate?.(12);
+    toast(liked ? '찜을 취소했어요' : '찜 목록에 담았어요');
     updateLikeCount();
-    $('btn-like').classList.toggle('on', !liked);
-    $('btn-like').setAttribute('aria-pressed', String(!liked));
+    setLikeBtn(!liked);
   }
   function onDislike() {
     if (!current) return;
+    if (!me) return askLogin('dislike');
     pop('btn-dislike');
     disliked.add(current.id);
-    store.set('disliked', [...disliked]);
-    logEvent('dislike');
-    learn(current, -1);
+    record(current, 'dislike', -1, dwell());
     advance('leave-dislike');
   }
   function onBuy() {
     if (!current) return;
     pop('btn-buy');
-    logEvent('buy');
-    learn(current, 2);
+    record(current, 'buy', 2, dwell());
     window.open(current.u, '_blank', 'noopener');
     toast(`${current.m}(으)로 이동했어요`);
+  }
+  function setLikeBtn(on) {
+    $('btn-like').classList.toggle('on', on);
+    $('btn-like').setAttribute('aria-pressed', String(on));
+  }
+
+  // 비로그인으로 15장쯤 넘기면 한 번만 로그인 안내
+  let guestTaps = 0, nudged = false;
+  function maybeNudge() {
+    if (nudged || !acct.ready || ++guestTaps < 15) return;
+    nudged = true;
+    $('nudge').hidden = false;
   }
 
   // ---------- 시작 설정 ----------
@@ -243,6 +263,7 @@
     settings = readOnboard();
     store.set('settings', settings);
     store.set('settingsV', SETTINGS_VERSION);
+    persist();
     showFeed();
   });
 
@@ -271,6 +292,7 @@
   const likeView = { cat: 'all', sub: 'all' };
 
   function openLikes() {
+    if (!me) return askLogin('likes');
     likeView.cat = 'all'; likeView.sub = 'all';
     renderLikes();
     $('likes').hidden = false;
@@ -305,11 +327,9 @@
     a.querySelector('.unlike').addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       likes = likes.filter(id => id !== f.id);
-      store.set('likes', likes);
-      events.push({ id: f.id, a: 'unlike', t: Date.now(), dwell: 0 }); store.set('events', events);
-      learn(f, -1);
+      record(f, 'unlike', -1);
       updateLikeCount();
-      if (current && current.id === f.id) { $('btn-like').classList.remove('on'); $('btn-like').setAttribute('aria-pressed', 'false'); }
+      if (current && current.id === f.id) setLikeBtn(false);
       toast('찜에서 뺐어요');
       renderLikes();
     });
@@ -367,6 +387,198 @@
     }
   }
 
+  // ---------- 로그인 · 회원가입 · 내 계정 ----------
+  const REASON = {
+    like: '♥ 찜은 로그인하면 저장돼요',
+    dislike: '싫어요를 반영해 비슷한 상품을 덜 보여 드려요. 로그인이 필요해요',
+    likes: '찜 목록은 로그인 후 볼 수 있어요',
+    nudge: '로그인하면 반응을 학습해 취향에 맞게 추천해요'
+  };
+  let authMode = 'login';
+  const initial = email => (String(email || '?').trim()[0] || '?').toUpperCase();
+
+  function askLogin(reason) {
+    pendingAct = (reason === 'like' || reason === 'dislike') && current ? { a: reason, id: current.id } : null;
+    openAuth(reason);
+  }
+  function openAuth(reason) {
+    $('nudge').hidden = true;
+    renderAccount(reason);
+    $('auth').hidden = false;
+  }
+  function closeAuth() {
+    $('auth').hidden = true;
+    pendingAct = null;
+  }
+  function submitLabel() { return authMode === 'login' ? '로그인' : '가입하고 시작하기'; }
+  function setAuthMode(m) {
+    authMode = m;
+    document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+    $('auth-title').textContent = m === 'login' ? '로그인' : '회원가입';
+    $('pw2-field').hidden = m === 'login';
+    $('auth-pw').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    $('auth-pw').placeholder = m === 'login' ? '비밀번호' : '8자 이상';
+    $('auth-submit').textContent = submitLabel();
+    $('auth-error').textContent = '';
+  }
+
+  function renderAccount(reason) {
+    $('auth-guest').hidden = !!me;
+    $('auth-user').hidden = !me;
+    if (!me) {
+      setAuthMode(authMode);
+      const off = !acct.ready;
+      $('auth-reason').textContent = off ? '로그인 기능을 준비하고 있어요. 조금만 기다려 주세요' : REASON[reason] || '';
+      $('auth-form').querySelectorAll('input, button').forEach(el => { el.disabled = off; });
+      return;
+    }
+    $('auth-title').textContent = '내 계정';
+    $('me-initial').textContent = initial(me.email);
+    $('me-email').textContent = me.email || '';
+    $('me-admin').hidden = !acct.isAdmin;
+    $('me-keep').textContent = acct.remember() ? '이 기기에서 자동 로그인 중' : '브라우저를 닫으면 로그아웃돼요';
+    $('me-likes').textContent = likes.length.toLocaleString();
+    $('me-reacts').textContent = (profile.n || 0).toLocaleString();
+    $('admin').hidden = !acct.isAdmin;
+    if (acct.isAdmin) renderAdmin();
+  }
+
+  async function renderAdmin() {
+    const grid = $('admin-grid'), top = $('admin-top');
+    grid.textContent = '불러오는 중…';
+    top.innerHTML = '';
+    try {
+      await acct.flush();
+      const s = await acct.adminStats();
+      grid.innerHTML = '';
+      [['회원', s.users], ['최근 7일 가입', s.users_7d], ['오늘 반응', s.events_today], ['전체 반응', s.events]].forEach(([k, v]) => {
+        const d = document.createElement('div');
+        d.innerHTML = '<b></b><span></span>';
+        d.querySelector('b').textContent = Number(v || 0).toLocaleString();
+        d.querySelector('span').textContent = k;
+        grid.appendChild(d);
+      });
+      for (const r of s.top_liked || []) {
+        const f = BY_ID.get(r.item_id);
+        const li = document.createElement('li');
+        li.innerHTML = '<img alt="" referrerpolicy="no-referrer" loading="lazy"><div class="tt"><b></b><span></span></div><em></em>';
+        if (f) li.querySelector('img').src = f.im;
+        li.querySelector('b').textContent = f ? f.b : r.item_id;
+        li.querySelector('span').textContent = f ? f.t : '피드에서 빠진 상품';
+        li.querySelector('em').textContent = `♥ ${r.n}`;
+        top.appendChild(li);
+      }
+      if (!top.children.length) top.innerHTML = '<li class="muted">아직 찜한 회원이 없어요</li>';
+    } catch {
+      grid.textContent = '통계를 불러오지 못했어요';
+    }
+  }
+
+  // 로그인 직후: 서버 기록과 이 기기 기록을 합친다
+  async function enterUser(u) {
+    const local = {
+      owner: store.get('owner', null), dirty: store.get('dirty', false),
+      likes: store.get('likes', []), disliked: store.get('disliked', []),
+      profile: store.get('profile', null), events: store.get('events', [])
+    };
+    const mine = local.owner === u.id;
+    const legacy = !local.owner && !!(local.likes.length || local.disliked.length || local.events.length);  // 로그인 도입 전(v0.3) 이 브라우저 기록
+    let server = null;
+    try { server = await acct.loadState(); }
+    catch (e) { if (!mine) throw e; }                 // 처음 쓰는 기기인데 서버를 못 읽으면 로그인 보류
+
+    let st, upload = false;
+    if (mine && (local.dirty || !server)) { st = local; upload = true; }
+    else if (legacy) { st = mergeLegacy(local, server); upload = true; }
+    else st = server || {};
+
+    me = u;
+    likes = st.likes || [];
+    disliked.clear();
+    (st.disliked || []).forEach(id => disliked.add(id));
+    profile = { ...emptyProfile(), ...(st.profile || {}) };
+    events = mine || legacy ? local.events : [];
+    if (!settings && st.settings) { settings = st.settings; store.set('settings', settings); store.set('settingsV', SETTINGS_VERSION); }
+    store.set('owner', u.id);
+    if (legacy) acct.track(...local.events.filter(e => BY_ID.has(e.id)).map(e => eventRow(BY_ID.get(e.id), e.a, e.dwell, e.t)));
+    if (upload || !server) persist(); else saveLocal();
+    updateAccountUI();
+    updateLikeCount();
+    if (current) setLikeBtn(likes.includes(current.id));
+  }
+  function mergeLegacy(local, server) {
+    const s = server || {};
+    const prof = { ...emptyProfile(), ...(s.profile || {}) };
+    const lp = local.profile || {};
+    for (const dim in W) for (const k in lp[dim] || {}) prof[dim][k] = clamp((prof[dim][k] || 0) + lp[dim][k]);
+    prof.n = (prof.n || 0) + local.events.filter(e => e.a !== 'skip').length;
+    return {
+      likes: [...new Set([...local.likes, ...(s.likes || [])])],
+      disliked: [...new Set([...(s.disliked || []), ...local.disliked])],
+      profile: prof,
+      settings: s.settings
+    };
+  }
+  function leaveUser() {
+    me = null;
+    USER_KEYS.forEach(k => store.del(k));
+    likes = []; events = [];
+    disliked.clear();
+    profile = emptyProfile();
+    updateAccountUI();
+    updateLikeCount();
+    if (current) setLikeBtn(false);
+  }
+  function updateAccountUI() {
+    const b = $('open-account');
+    b.classList.toggle('signed', !!me);
+    b.setAttribute('aria-label', me ? '내 계정' : '로그인');
+    $('acct-initial').textContent = me ? initial(me.email) : '';
+    $('ob-login').hidden = !!me || !acct.ready;
+  }
+
+  $('auth-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = $('auth-email').value.trim(), pw = $('auth-pw').value, keep = $('auth-keep').checked;
+    const fail = msg => { $('auth-error').textContent = msg; };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('이메일 주소를 다시 확인해 주세요');
+    if (!pw) return fail('비밀번호를 입력해 주세요');
+    if (authMode === 'signup' && pw.length < 8) return fail('비밀번호는 8자 이상으로 만들어 주세요');
+    if (authMode === 'signup' && pw !== $('auth-pw2').value) return fail('비밀번호 확인이 일치하지 않아요');
+    fail('');
+    const btn = $('auth-submit');
+    btn.disabled = true;
+    btn.textContent = '잠시만요…';
+    try {
+      const u = authMode === 'login' ? await acct.signIn(email, pw, keep) : await acct.signUp(email, pw, keep);
+      if (!u) { fail(''); $('auth-reason').textContent = '메일함에서 인증 링크를 누르면 가입이 끝나요'; return; }
+      const p = pendingAct;
+      await enterUser(u);
+      $('auth-pw').value = '';
+      $('auth-pw2').value = '';
+      closeAuth();
+      toast(authMode === 'signup' ? '가입을 환영해요!' : '로그인했어요');
+      if (!$('onboard').hidden) initOnboard();
+      if (p && current && current.id === p.id) {
+        if (p.a === 'dislike') onDislike();
+        else if (!likes.includes(p.id)) onLike();
+      }
+    } catch (ex) {
+      fail(acct.message(ex));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = submitLabel();
+    }
+  });
+  $('sign-out').addEventListener('click', async () => {
+    $('sign-out').disabled = true;
+    await acct.signOut();
+    leaveUser();
+    $('sign-out').disabled = false;
+    closeAuth();
+    toast('로그아웃했어요');
+  });
+
   // ---------- 보조 ----------
   function hideCoach() { $('coach').classList.add('hide'); store.set('coachDone', true); }
   function pop(id) { const b = $(id); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
@@ -375,6 +587,7 @@
   const rand = a => (a && a.length ? a[Math.floor(Math.random() * a.length)] : null);
   const count = (a, v) => a.filter(x => x === v).length;
   function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
   // ---------- 이벤트 연결 ----------
   $('stage').addEventListener('click', onSkip);
@@ -385,17 +598,37 @@
   $('close-likes').addEventListener('click', () => { $('likes').hidden = true; });
   $('likes').addEventListener('click', e => { if (e.target === $('likes')) $('likes').hidden = true; });
   $('open-settings').addEventListener('click', showOnboard);
+  $('open-account').addEventListener('click', () => openAuth());
+  $('ob-login').addEventListener('click', () => openAuth());
+  $('close-auth').addEventListener('click', closeAuth);
+  $('auth').addEventListener('click', e => { if (e.target === $('auth')) closeAuth(); });
+  document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => b.addEventListener('click', () => setAuthMode(b.dataset.mode)));
+  $('nudge-login').addEventListener('click', () => openAuth('nudge'));
+  $('nudge-close').addEventListener('click', () => { $('nudge').hidden = true; });
   $('photo').addEventListener('error', () => { if (current) { busy = false; advance('leave-next'); } });
   document.addEventListener('keydown', e => {
-    if ($('feed').hidden || !$('likes').hidden) { if (e.key === 'Escape') $('likes').hidden = true; return; }
+    if (!$('auth').hidden) { if (e.key === 'Escape') closeAuth(); return; }
+    if (!$('likes').hidden) { if (e.key === 'Escape') $('likes').hidden = true; return; }
+    if ($('feed').hidden) return;
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSkip(); }
     else if (e.key.toLowerCase() === 'l') onLike();
     else if (e.key.toLowerCase() === 'd') onDislike();
     else if (e.key.toLowerCase() === 'b') onBuy();
   });
 
-  // ---------- 시작 ----------
-  updateLikeCount();
-  if (!FEED.length) { document.body.innerHTML = '<p style="padding:24px">feed.js가 없습니다. pipeline에서 node build_feed.js를 실행해 주세요.</p>'; return; }
-  if (settings) showFeed(); else showOnboard();
+  // ---------- 시작: 자동 로그인 확인 → 화면 ----------
+  async function boot() {
+    if (!FEED.length) { document.body.innerHTML = '<p style="padding:24px">feed.js가 없습니다. pipeline에서 node build_feed.js를 실행해 주세요.</p>'; return; }
+    if (acct.ready) {
+      try {
+        const u = await withTimeout(acct.restore(), 6000);
+        if (u) await enterUser(u);
+      } catch { /* 자동 로그인 실패 → 비로그인으로 시작 */ }
+      acct.onSignedOut(() => { leaveUser(); toast('다시 로그인해 주세요'); });
+    }
+    updateAccountUI();
+    updateLikeCount();
+    if (settings) showFeed(); else showOnboard();
+  }
+  boot();
 })();
