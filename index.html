@@ -104,12 +104,16 @@
   <div class="sheet" id="likes" hidden role="dialog" aria-modal="true" aria-labelledby="likes-title">
     <div class="sheet-panel">
       <div class="sheet-head">
-        <h2 id="likes-title">찜한 상품</h2>
+        <h2 id="likes-title">찜한 상품 <span class="num" id="likes-total"></span></h2>
         <button class="icon-btn" id="close-likes" type="button" aria-label="닫기">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
       </div>
-      <div class="like-grid" id="like-grid"></div>
+      <div class="filter-rows">
+        <div class="tabs" id="like-cats" role="tablist" aria-label="카테고리"></div>
+        <div class="tabs sub" id="like-subs" role="tablist" aria-label="세부 분류" hidden></div>
+      </div>
+      <div id="like-list"></div>
       <p class="empty" id="likes-empty">아직 찜한 상품이 없어요. ♥를 눌러 모아 보세요.</p>
     </div>
   </div>

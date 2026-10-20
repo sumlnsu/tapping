@@ -266,22 +266,105 @@
     el.textContent = likes.length ? String(likes.length) : '';
     el.toggleAttribute('data-zero', !likes.length);
   }
+  // 찜 목록: 카테고리 칩 → 세부 분류 칩 → 묶음(제목+개수)별 카드
+  const CAT_LABEL = { outer: '아우터', top: '상의', bottom: '하의', shoes: '신발', bag: '가방', hat: '모자', accessory: '액세서리' };
+  const likeView = { cat: 'all', sub: 'all' };
+
   function openLikes() {
-    const grid = $('like-grid');
-    grid.innerHTML = '';
-    const items = likes.map(id => BY_ID.get(id)).filter(Boolean);
-    $('likes-empty').hidden = items.length > 0;
-    for (const f of items) {
-      const a = document.createElement('a');
-      a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
-      a.innerHTML = '<div class="ph"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><div class="tx"><b></b><span class="t"></span><div class="pr"></div></div>';
-      a.querySelector('img').src = f.im;
-      a.querySelector('b').textContent = f.b;
-      a.querySelector('.t').textContent = f.t;
-      a.querySelector('.pr').textContent = won(f.p, f.e);
-      grid.appendChild(a);
-    }
+    likeView.cat = 'all'; likeView.sub = 'all';
+    renderLikes();
     $('likes').hidden = false;
+  }
+
+  function chip(label, n, active, onClick) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab'; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(active));
+    b.innerHTML = '<span></span><em></em>';
+    b.querySelector('span').textContent = label;
+    b.querySelector('em').textContent = n;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function groupBy(list, key) {
+    const m = new Map();
+    for (const f of list) { const k = key(f); if (!m.has(k)) m.set(k, []); m.get(k).push(f); }
+    return m;
+  }
+
+  function likeCard(f) {
+    const a = document.createElement('a');
+    a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = '<div class="ph"><img loading="lazy" referrerpolicy="no-referrer" alt=""><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
+    a.querySelector('img').src = f.im;
+    a.querySelector('.sub').textContent = `${CAT_LABEL[f.c] || ''} · ${f.s || '기타'}`;
+    a.querySelector('b').textContent = f.b;
+    a.querySelector('.t').textContent = f.t;
+    a.querySelector('.pr').textContent = won(f.p, f.e);
+    a.querySelector('.unlike').addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      likes = likes.filter(id => id !== f.id);
+      store.set('likes', likes);
+      events.push({ id: f.id, a: 'unlike', t: Date.now(), dwell: 0 }); store.set('events', events);
+      learn(f, -1);
+      updateLikeCount();
+      if (current && current.id === f.id) { $('btn-like').classList.remove('on'); $('btn-like').setAttribute('aria-pressed', 'false'); }
+      toast('찜에서 뺐어요');
+      renderLikes();
+    });
+    return a;
+  }
+
+  function renderLikes() {
+    const items = likes.map(id => BY_ID.get(id)).filter(Boolean);
+    $('likes-total').textContent = items.length ? String(items.length) : '';
+    $('likes-empty').hidden = items.length > 0;
+
+    // 1) 카테고리 칩 (찜한 카테고리만, 정해진 순서)
+    const byCat = groupBy(items, f => f.c);
+    if (likeView.cat !== 'all' && !byCat.has(likeView.cat)) { likeView.cat = 'all'; likeView.sub = 'all'; }
+    const cats = $('like-cats');
+    cats.innerHTML = '';
+    cats.hidden = !items.length;
+    cats.appendChild(chip('전체', items.length, likeView.cat === 'all', () => { likeView.cat = 'all'; likeView.sub = 'all'; renderLikes(); }));
+    for (const c of ALL_CATS) if (byCat.has(c)) cats.appendChild(chip(CAT_LABEL[c], byCat.get(c).length, likeView.cat === c, () => { likeView.cat = c; likeView.sub = 'all'; renderLikes(); }));
+
+    // 2) 세부 분류 칩 (카테고리를 골랐을 때만)
+    const subs = $('like-subs');
+    subs.innerHTML = '';
+    const inCat = likeView.cat === 'all' ? items : byCat.get(likeView.cat) || [];
+    const bySub = groupBy(inCat, f => f.s || '기타');
+    if (likeView.sub !== 'all' && !bySub.has(likeView.sub)) likeView.sub = 'all';
+    subs.hidden = likeView.cat === 'all' || bySub.size < 2;
+    if (!subs.hidden) {
+      subs.appendChild(chip('전체', inCat.length, likeView.sub === 'all', () => { likeView.sub = 'all'; renderLikes(); }));
+      [...bySub.entries()].sort((a, b) => b[1].length - a[1].length)
+        .forEach(([s, list]) => subs.appendChild(chip(s, list.length, likeView.sub === s, () => { likeView.sub = s; renderLikes(); })));
+    }
+
+    // 3) 묶음: 전체 → 카테고리별, 카테고리 선택 → 세부 분류별, 세부 선택 → 하나의 묶음
+    const shown = likeView.sub === 'all' ? inCat : bySub.get(likeView.sub) || [];
+    const groups = likeView.cat === 'all'
+      ? ALL_CATS.filter(c => byCat.has(c)).map(c => [CAT_LABEL[c], byCat.get(c)])
+      : likeView.sub === 'all'
+        ? [...groupBy(shown, f => f.s || '기타').entries()].sort((a, b) => b[1].length - a[1].length)
+        : [[likeView.sub, shown]];
+    const list = $('like-list');
+    list.innerHTML = '';
+    for (const [title, gItems] of groups) {
+      const sec = document.createElement('section');
+      sec.className = 'like-group';
+      const h = document.createElement('h3');
+      h.innerHTML = '<span></span><em></em>';
+      h.querySelector('span').textContent = title;
+      h.querySelector('em').textContent = gItems.length;
+      const grid = document.createElement('div');
+      grid.className = 'like-grid';
+      gItems.forEach(f => grid.appendChild(likeCard(f)));
+      sec.append(h, grid);
+      list.appendChild(sec);
+    }
   }
 
   // ---------- 보조 ----------

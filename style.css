@@ -98,12 +98,30 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .sheet-panel { width: 100%; max-height: 86%; overflow-y: auto; background: var(--c-bg); border-radius: 24px 24px 0 0; padding: 8px 16px max(20px, env(safe-area-inset-bottom)); }
 .sheet-head { position: sticky; top: 0; background: var(--c-bg); display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
 .sheet-head h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
+.sheet-head .num { margin-left: 4px; color: var(--c-accent); font-variant-numeric: tabular-nums; }
+.filter-rows { position: sticky; top: 52px; z-index: 1; background: var(--c-bg); padding-bottom: 8px; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 6px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs[hidden] { display: none; }
+.tab { flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--c-line); background: var(--c-bg); font-size: 13px; font-weight: 600; color: var(--c-ink-2); display: inline-flex; align-items: center; gap: 5px; transition: all var(--d-fast); }
+.tab em { font-style: normal; font-size: 12px; color: var(--c-muted); font-variant-numeric: tabular-nums; }
+.tab[aria-selected="true"] { background: var(--c-btn-bg); border-color: var(--c-btn-bg); color: var(--c-btn-ink); }
+.tab[aria-selected="true"] em { color: inherit; opacity: .7; }
+.tabs.sub .tab { height: 32px; font-size: 12px; }
+.tabs.sub .tab[aria-selected="true"] { background: var(--c-accent-soft); border-color: var(--c-accent); color: var(--c-accent); }
+.like-group { margin-top: 14px; }
+.like-group h3 { margin: 0 0 8px; font-size: 15px; font-weight: 800; letter-spacing: -.02em; display: flex; align-items: baseline; gap: 6px; }
+.like-group h3 em { font-style: normal; font-size: 13px; font-weight: 700; color: var(--c-accent); font-variant-numeric: tabular-nums; }
 .like-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .like-item { display: flex; flex-direction: column; border: 1px solid var(--c-line); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit; }
-.like-item .ph { aspect-ratio: 1; background: #fff; display: grid; place-items: center; padding: 10px; }
+.like-item .ph { position: relative; aspect-ratio: 1; background: #fff; display: grid; place-items: center; padding: 10px; }
 .like-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.unlike { position: absolute; top: 4px; right: 4px; width: 44px; height: 44px; border: 0; background: transparent; display: grid; place-items: center; color: var(--c-like); }
+.unlike svg { width: 20px; height: 20px; fill: var(--c-like); }
 .like-item .tx { padding: 8px 10px 10px; font-size: 12px; }
+.like-item .tx .sub { display: block; margin-bottom: 2px; font-size: 11px; font-weight: 600; color: var(--c-accent); }
 .like-item b { display: block; font-size: 13px; }
+.like-item .t { display: block; color: var(--c-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .like-item .pr { margin-top: 2px; font-weight: 700; }
 .empty { color: var(--c-muted); font-size: 14px; text-align: center; padding: 40px 0; }
 
