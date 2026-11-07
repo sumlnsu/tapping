@@ -1,13 +1,30 @@
-/* 태핑 v0.4 — 원탭 패션 큐레이션
-   · 비로그인: 넘겨 보기 + 구매 링크 (취향 학습 없음)
-   · 로그인: 찜·싫어요·반응 학습 맞춤 추천 → 서버에 저장되어 어느 기기에서나 이어짐 (account.js) */
+/* 태핑 v0.5 — 원탭 패션 큐레이션
+   · 모바일: 빈 곳을 탭하면 다음 / PC(1024px~): 사진을 클릭하면 다음 + 단축키
+   · 비로그인: 넘겨 보기 + 구매 링크 (취향 학습 없음) / 로그인: 찜·싫어요·반응 학습 맞춤 추천 (account.js)
+   · 추천 점수에 신상품(발매일·처음 본 날)과 콜라보 가산점 */
 (() => {
   'use strict';
 
-  const FEED = window.TAPPING_FEED || [];
+  const FEED = expandFeed(window.TAPPING_FEED);
   const BY_ID = new Map(FEED.map(f => [f.id, f]));
   const $ = id => document.getElementById(id);
   const acct = window.TP_ACCOUNT;
+  const isPC = () => matchMedia('(min-width: 1024px)').matches;
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  // feed.js v2(압축) → 앱에서 쓰는 객체. v1(객체 배열)도 그대로 받음
+  function expandFeed(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    const unpackImg = s => { const k = s.indexOf('~'); return k > 0 && k < 3 ? raw.img[+s.slice(0, k)] + s.slice(k + 1) : s; };
+    return raw.items.map(([pid, m, b, t, p, e, c, s, g, x, u, im, r, f]) => {
+      const [mall, idPrefix, urlPrefix] = raw.malls[m];
+      return {
+        id: idPrefix + pid, b: raw.brands[b], t, p, e, c, s, g, x, m: mall,
+        u: /^https?:/.test(u) ? u : urlPrefix + (u || pid), im: unpackImg(im), r, f
+      };
+    });
+  }
 
   // ---------- 저장소 (사생활 보호 모드 등에서 실패해도 동작) ----------
   const store = {
@@ -33,6 +50,13 @@
   const priceBucket = p => (p < 100000 ? 0 : p < 300000 ? 1 : p < 700000 ? 2 : 3);
   const won = (p, est) => (est ? '약 ' : '') + '₩' + Math.round(p).toLocaleString('ko-KR');
 
+  // ---------- 신상품 · 콜라보 가산점 ----------
+  const TODAY = Math.floor(Date.now() / 864e5);
+  const ageDays = f => (f.r || f.f ? TODAY - (f.r || f.f) : Infinity);       // 발매일, 없으면 처음 본 날
+  const isNew = f => ageDays(f) <= 14;
+  const freshness = f => { const a = ageDays(f); return a === Infinity ? 0 : Math.exp(-Math.max(0, a) / 21); };  // 3주마다 1/e
+  const prior = f => 1.2 * freshness(f) + 0.6 * (f.x ? 1 : 0);
+
   // ---------- 후보군 ----------
   function matches(f, s) {
     if (s.gender === 'men' && f.g === 'women') return false;
@@ -49,8 +73,9 @@
     return list;
   }
 
-  // ---------- 추천 (1단계: 규칙 기반, 로그인 사용자만 학습) ----------
+  // ---------- 추천 (1단계: 규칙 기반 + 신상품·콜라보 가산, 로그인 사용자만 학습) ----------
   const W = { brand: 1.0, cat: 0.6, price: 0.5, mall: 0.4, collab: 0.5 };
+  const W_PRIOR = 0.8;
   const keys = f => ({ brand: f.b, cat: f.c, price: priceBucket(f.p), mall: f.m, collab: f.x });
   const interactions = () => Math.max(profile.n || 0, events.filter(e => e.a !== 'skip').length);
 
@@ -59,26 +84,24 @@
     if (!list.length) return null;
     const sample = list.length > 600 ? shuffle(list).slice(0, 600) : list;
 
-    // 콜드 스타트(비로그인 포함): 반응 10번 전까지는 카테고리·브랜드를 골고루, 콜라보 우선
+    // 콜드 스타트(비로그인 포함): 반응 10번 전까지는 카테고리·브랜드를 골고루, 신상품·콜라보일수록 자주
     if (interactions() < 10) {
       const shownCats = events.slice(-12).map(e => BY_ID.get(e.id)?.c);
       const catOrder = [...settings.cats].sort((a, b) => count(shownCats, a) - count(shownCats, b));
       for (const c of catOrder) {
         const cand = sample.filter(f => f.c === c && !recent.includes(f.b));
-        if (!cand.length) continue;
-        const collab = cand.filter(f => f.x);
-        return rand(collab.length && Math.random() < 0.7 ? collab : cand);
+        if (cand.length) return weighted(cand, f => 0.15 + prior(f));
       }
-      return rand(sample);
+      return weighted(sample, f => 0.15 + prior(f));
     }
 
-    // 20%는 새로운 상품 탐색
-    if (Math.random() < 0.2) return rand(sample.filter(f => !recent.includes(f.b))) || rand(sample);
+    // 20%는 새로운 상품 탐색 (여기서도 신상품·콜라보 우대)
+    if (Math.random() < 0.2) return weighted(sample.filter(f => !recent.includes(f.b)), f => 0.3 + prior(f)) || rand(sample);
 
     let best = null, bestScore = -Infinity;
     for (const f of sample) {
       const k = keys(f);
-      let s = 0;
+      let s = W_PRIOR * prior(f);
       for (const dim in W) s += W[dim] * (profile[dim][k[dim]] || 0);
       if (recent.includes(f.b)) s -= 1.2;
       s += Math.random() * 0.6;
@@ -120,7 +143,12 @@
   function render(f) {
     current = f;
     shownAt = Date.now();
-    if (!f) { $('brand').textContent = '보여 드릴 상품이 없어요'; $('title').textContent = '설정에서 조건을 넓혀 보세요'; $('price').textContent = ''; $('mall').textContent = ''; $('photo').removeAttribute('src'); return; }
+    if (!f) {
+      $('brand').textContent = '보여 드릴 상품이 없어요'; $('title').textContent = '설정에서 조건을 넓혀 보세요';
+      $('price').textContent = ''; $('mall').textContent = ''; $('photo').removeAttribute('src');
+      $('collab').hidden = true; $('new').hidden = true;
+      return;
+    }
     seen.add(f.id);
     store.set('seen', [...seen].slice(-4000));
     recent = [f.b, ...recent].slice(0, 2);
@@ -128,9 +156,11 @@
     $('photo').alt = `${f.b} ${f.t}`;
     $('brand').textContent = f.b;
     $('title').textContent = f.t;
+    $('title').title = f.t;
     $('price').textContent = won(f.p, f.e);
     $('mall').textContent = f.m;
     $('collab').hidden = !f.x;
+    $('new').hidden = !isNew(f);
     setLikeBtn(likes.includes(f.id));
     // 다음 상품 미리 받아 두기
     nextItem = pick();
@@ -140,17 +170,17 @@
   function advance(leaveClass) {
     if (busy) return;
     busy = true;
-    const card = $('card');
-    card.classList.add(leaveClass);
+    const v = $('viewer');
+    v.classList.add(leaveClass);
     setTimeout(() => {
       const f = nextItem && !seen.has(nextItem.id) ? nextItem : pick();
-      card.classList.remove(leaveClass);
-      card.classList.add('enter');
+      v.classList.remove(leaveClass);
+      v.classList.add('enter');
       render(f);
-      void card.offsetWidth;            // 다시 그리기 강제 → 등장 애니메이션
-      card.classList.remove('enter');
+      void v.offsetWidth;               // 다시 그리기 강제 → 등장 애니메이션
+      v.classList.remove('enter');
       busy = false;
-    }, 200);
+    }, 170);
   }
 
   // ---------- 행동 ----------
@@ -161,7 +191,7 @@
     if (me) record(current, 'skip', -0.15, dwell()); else maybeNudge();
     advance('leave-next');
   }
-  // 찜은 하트만 켜고 끄며 다음 상품으로 넘어가지 않는다 (넘기기는 화면 탭으로만)
+  // 찜은 하트만 켜고 끄며 다음 상품으로 넘어가지 않는다 (넘기기는 화면 탭·클릭으로만)
   function onLike() {
     if (!current) return;
     if (!me) return askLogin('like');
@@ -190,8 +220,9 @@
     toast(`${current.m}(으)로 이동했어요`);
   }
   function setLikeBtn(on) {
-    $('btn-like').classList.toggle('on', on);
-    $('btn-like').setAttribute('aria-pressed', String(on));
+    const b = $('btn-like');
+    b.setAttribute('aria-pressed', String(on));
+    b.querySelector('.act__label').textContent = on ? '찜했어요' : '찜하기';
   }
 
   // 비로그인으로 15장쯤 넘기면 한 번만 로그인 안내
@@ -220,6 +251,7 @@
       });
     });
     updateCount();
+    renderArt();
   }
   function readOnboard() {
     const out = { gender: 'all', cats: [], prices: [] };
@@ -236,8 +268,26 @@
   function updateCount() {
     const s = readOnboard();
     const n = s.cats.length && s.prices.length ? FEED.filter(f => matches(f, s)).length : 0;
-    $('ob-count').textContent = n ? `지금 조건에 맞는 상품 ${n.toLocaleString()}개` : '카테고리와 가격을 하나 이상 골라 주세요';
+    const fresh = n ? FEED.filter(f => matches(f, s) && isNew(f)).length : 0;
+    $('ob-count').textContent = n ? `지금 조건에 맞는 상품 ${n.toLocaleString()}개${fresh ? ` · 2주 안에 나온 신상 ${fresh.toLocaleString()}개` : ''}` : '카테고리와 가격을 하나 이상 골라 주세요';
     $('start').disabled = !n;
+  }
+  // PC 시작 화면 오른쪽: 신상품·콜라보 위주로 6장 (넓은 화면에서만 보임)
+  function renderArt() {
+    const art = $('ob-art');
+    if (!isPC() || art.childElementCount) return;
+    const picks = shuffle(FEED.filter(f => f.x || isNew(f))).slice(0, 60).sort((a, b) => prior(b) - prior(a));
+    const used = new Set(), chosen = [];
+    for (const f of picks) if (!used.has(f.b) && chosen.length < 6) { used.add(f.b); chosen.push(f); }
+    chosen.forEach((f, i) => {
+      const fig = document.createElement('figure');
+      fig.dataset.theme = 'light';
+      fig.style.setProperty('--i', i);
+      const img = document.createElement('img');
+      img.src = f.im; img.alt = ''; img.referrerPolicy = 'no-referrer'; img.loading = 'lazy';
+      fig.appendChild(img);
+      art.appendChild(fig);
+    });
   }
   document.querySelectorAll('[data-key]').forEach(group => {
     group.addEventListener('click', e => {
@@ -273,6 +323,7 @@
     nextItem = null;
     render(pick());
     $('stage').focus({ preventScroll: true });
+    $('coach').textContent = finePointer ? '사진을 클릭하면 다음 상품' : '빈 곳을 탭하면 다음 상품';
     if (store.get('coachDone', false)) hideCoach(); else setTimeout(hideCoach, 3500);
   }
   function showOnboard() {
@@ -281,11 +332,21 @@
     initOnboard();
   }
 
+  // ---------- 시트 (DS dialog.sheet) ----------
+  function openSheet(id) { const d = $(id); if (!d.open) d.showModal(); }
+  function closeSheet(id) { const d = $(id); if (d.open) d.close(); }
+  // 바깥(어두운 배경)을 누르면 닫기
+  for (const id of ['likes', 'auth']) {
+    $(id).addEventListener('click', e => {
+      if (e.target !== $(id)) return;
+      const r = $(id).getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeSheet(id);
+    });
+  }
+
   // ---------- 찜 목록 ----------
   function updateLikeCount() {
-    const el = $('like-count');
-    el.textContent = likes.length ? String(likes.length) : '';
-    el.toggleAttribute('data-zero', !likes.length);
+    $('like-count').textContent = likes.length ? String(likes.length) : '';
   }
   // 찜 목록: 카테고리 칩 → 세부 분류 칩 → 묶음(제목+개수)별 카드
   const CAT_LABEL = { outer: '아우터', top: '상의', bottom: '하의', shoes: '신발', bag: '가방', hat: '모자', accessory: '액세서리' };
@@ -295,12 +356,12 @@
     if (!me) return askLogin('likes');
     likeView.cat = 'all'; likeView.sub = 'all';
     renderLikes();
-    $('likes').hidden = false;
+    openSheet('likes');
   }
 
   function chip(label, n, active, onClick) {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'tab'; b.setAttribute('role', 'tab');
+    b.type = 'button'; b.className = 'filter'; b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(active));
     b.innerHTML = '<span></span><em></em>';
     b.querySelector('span').textContent = label;
@@ -318,7 +379,7 @@
   function likeCard(f) {
     const a = document.createElement('a');
     a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = '<div class="ph"><img loading="lazy" referrerpolicy="no-referrer" alt=""><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
+    a.innerHTML = '<div class="ph" data-theme="light"><img loading="lazy" referrerpolicy="no-referrer" alt=""><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
     a.querySelector('img').src = f.im;
     a.querySelector('.sub').textContent = `${CAT_LABEL[f.c] || ''} · ${f.s || '기타'}`;
     a.querySelector('b').textContent = f.b;
@@ -404,16 +465,17 @@
   function openAuth(reason) {
     $('nudge').hidden = true;
     renderAccount(reason);
-    $('auth').hidden = false;
+    openSheet('auth');
   }
-  function closeAuth() {
-    $('auth').hidden = true;
-    pendingAct = null;
-  }
+  function closeAuth() { closeSheet('auth'); }
+  $('auth').addEventListener('close', () => { pendingAct = null; });
   function submitLabel() { return authMode === 'login' ? '로그인' : '가입하고 시작하기'; }
   function setAuthMode(m) {
     authMode = m;
-    document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+    document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => {
+      b.setAttribute('aria-selected', String(b.dataset.mode === m));
+      b.setAttribute('aria-pressed', String(b.dataset.mode === m));
+    });
     $('auth-title').textContent = m === 'login' ? '로그인' : '회원가입';
     $('pw2-field').hidden = m === 'login';
     $('auth-pw').autocomplete = m === 'login' ? 'current-password' : 'new-password';
@@ -453,15 +515,16 @@
       grid.innerHTML = '';
       [['회원', s.users], ['최근 7일 가입', s.users_7d], ['오늘 반응', s.events_today], ['전체 반응', s.events]].forEach(([k, v]) => {
         const d = document.createElement('div');
-        d.innerHTML = '<b></b><span></span>';
-        d.querySelector('b').textContent = Number(v || 0).toLocaleString();
-        d.querySelector('span').textContent = k;
+        d.className = 'stat';
+        d.innerHTML = '<span class="stat__value"></span><span class="stat__label"></span>';
+        d.querySelector('.stat__value').textContent = Number(v || 0).toLocaleString();
+        d.querySelector('.stat__label').textContent = k;
         grid.appendChild(d);
       });
       for (const r of s.top_liked || []) {
         const f = BY_ID.get(r.item_id);
         const li = document.createElement('li');
-        li.innerHTML = '<img alt="" referrerpolicy="no-referrer" loading="lazy"><div class="tt"><b></b><span></span></div><em></em>';
+        li.innerHTML = '<img alt="" referrerpolicy="no-referrer" loading="lazy" data-theme="light"><div class="tt"><b></b><span></span></div><em></em>';
         if (f) li.querySelector('img').src = f.im;
         li.querySelector('b').textContent = f ? f.b : r.item_id;
         li.querySelector('span').textContent = f ? f.t : '피드에서 빠진 상품';
@@ -583,38 +646,48 @@
   function hideCoach() { $('coach').classList.add('hide'); store.set('coachDone', true); }
   function pop(id) { const b = $(id); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
   let toastTimer;
-  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200); }
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('is-on'), 2200); }
   const rand = a => (a && a.length ? a[Math.floor(Math.random() * a.length)] : null);
   const count = (a, v) => a.filter(x => x === v).length;
   function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+  // 가중치에 비례해 하나 고르기 (신상품·콜라보일수록 잘 뽑힘)
+  function weighted(list, w) {
+    if (!list || !list.length) return null;
+    const ws = list.map(w), total = ws.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < list.length; i++) if ((r -= ws[i]) <= 0) return list[i];
+    return list[list.length - 1];
+  }
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
   // ---------- 이벤트 연결 ----------
   $('stage').addEventListener('click', onSkip);
+  // 모바일: 사진 아래 정보 칸의 빈 곳을 눌러도 다음 (버튼은 제외). PC는 사진 클릭만
+  $('detail').addEventListener('click', e => { if (!isPC() && !e.target.closest('button, a')) onSkip(); });
+  $('btn-next').addEventListener('click', onSkip);
   $('btn-like').addEventListener('click', onLike);
   $('btn-dislike').addEventListener('click', onDislike);
   $('btn-buy').addEventListener('click', onBuy);
   $('open-likes').addEventListener('click', openLikes);
-  $('close-likes').addEventListener('click', () => { $('likes').hidden = true; });
-  $('likes').addEventListener('click', e => { if (e.target === $('likes')) $('likes').hidden = true; });
+  $('close-likes').addEventListener('click', () => closeSheet('likes'));
   $('open-settings').addEventListener('click', showOnboard);
   $('open-account').addEventListener('click', () => openAuth());
   $('ob-login').addEventListener('click', () => openAuth());
   $('close-auth').addEventListener('click', closeAuth);
-  $('auth').addEventListener('click', e => { if (e.target === $('auth')) closeAuth(); });
   document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => b.addEventListener('click', () => setAuthMode(b.dataset.mode)));
   $('nudge-login').addEventListener('click', () => openAuth('nudge'));
   $('nudge-close').addEventListener('click', () => { $('nudge').hidden = true; });
   $('photo').addEventListener('error', () => { if (current) { busy = false; advance('leave-next'); } });
+  $('stage').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onSkip(); } });
   document.addEventListener('keydown', e => {
-    if (!$('auth').hidden) { if (e.key === 'Escape') closeAuth(); return; }
-    if (!$('likes').hidden) { if (e.key === 'Escape') $('likes').hidden = true; return; }
-    if ($('feed').hidden) return;
-    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onSkip(); }
+    if ($('auth').open || $('likes').open || $('feed').hidden) return;     // 시트가 열려 있으면 Esc는 시트가 처리
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); onSkip(); }
     else if (e.key.toLowerCase() === 'l') onLike();
     else if (e.key.toLowerCase() === 'd') onDislike();
     else if (e.key.toLowerCase() === 'b') onBuy();
   });
+  matchMedia('(min-width: 1024px)').addEventListener('change', () => { if (!$('onboard').hidden) renderArt(); });
 
   // ---------- 시작: 자동 로그인 확인 → 화면 ----------
   async function boot() {
@@ -629,6 +702,8 @@
     updateAccountUI();
     updateLikeCount();
     if (settings) showFeed(); else showOnboard();
+    $('boot').classList.add('done');
+    setTimeout(() => $('boot').remove(), 400);
   }
   boot();
 })();

@@ -1,73 +1,82 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-palette="volt">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14213d">
-<title>태핑</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="고르지 말고, 넘기세요. 감도 높은 패션 아이템을 한 장씩 보여 주는 원탭 큐레이션">
+<title>태핑 TAPPING</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="ds">
 <div class="app" id="app">
+
+  <!-- 0. 데이터 받는 동안 -->
+  <div class="boot" id="boot" role="status"><span class="wordmark"><span class="mark" aria-hidden="true"></span>TAPPING</span><span class="boot__bar" aria-hidden="true"></span><span class="sr-only">불러오는 중</span></div>
 
   <!-- 1. 시작 설정 -->
   <section class="screen onboard" id="onboard" hidden aria-labelledby="ob-title">
-    <div class="ob-head">
-      <p class="en-label">TAPPING</p>
-      <h1 id="ob-title">고르지 말고,<br>넘기세요.</h1>
-      <p class="lead">세 가지만 정하면 바로 시작해요.</p>
+    <div class="ob-main">
+      <header class="ob-head">
+        <p class="eyebrow"><span class="mark" aria-hidden="true"></span>TAPPING</p>
+        <h1 class="display ob-title" id="ob-title">고르지 말고,<br><mark>넘기세요.</mark></h1>
+        <p class="lead">세 가지만 정하면 바로 시작해요.</p>
+      </header>
+
+      <fieldset class="q">
+        <legend>성별</legend>
+        <div class="seg seg--full" data-key="gender" data-single>
+          <button class="seg__btn" type="button" data-v="men">남성</button>
+          <button class="seg__btn" type="button" data-v="women">여성</button>
+          <button class="seg__btn" type="button" data-v="all">전체</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend>카테고리 <span class="hint">여러 개 선택</span></legend>
+        <div class="picks" data-key="cats">
+          <button type="button" data-v="all">전체</button>
+          <button type="button" data-v="outer">아우터</button>
+          <button type="button" data-v="top">상의</button>
+          <button type="button" data-v="bottom">하의</button>
+          <button type="button" data-v="shoes">신발</button>
+          <button type="button" data-v="bag">가방</button>
+          <button type="button" data-v="hat">모자</button>
+          <button type="button" data-v="accessory">액세서리</button>
+        </div>
+      </fieldset>
+
+      <fieldset class="q">
+        <legend>가격 <span class="hint">여러 개 선택</span></legend>
+        <div class="picks" data-key="prices">
+          <button type="button" data-v="all">전체</button>
+          <button type="button" data-v="0">~10만</button>
+          <button type="button" data-v="1">10~30만</button>
+          <button type="button" data-v="2">30~70만</button>
+          <button type="button" data-v="3">70만~</button>
+        </div>
+      </fieldset>
+
+      <div class="ob-foot">
+        <p class="count" id="ob-count" aria-live="polite"></p>
+        <button class="btn btn--lg btn--block" id="start" type="button">시작하기</button>
+        <button class="link" id="ob-login" type="button" hidden>이미 계정이 있나요? <b>로그인</b></button>
+      </div>
     </div>
-
-    <fieldset class="q">
-      <legend>성별</legend>
-      <div class="seg" data-key="gender" data-single>
-        <button type="button" data-v="men">남성</button>
-        <button type="button" data-v="women">여성</button>
-        <button type="button" data-v="all">전체</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="q">
-      <legend>카테고리 <span class="hint">여러 개 선택</span></legend>
-      <div class="chips" data-key="cats">
-        <button type="button" data-v="all">전체</button>
-        <button type="button" data-v="outer">아우터</button>
-        <button type="button" data-v="top">상의</button>
-        <button type="button" data-v="bottom">하의</button>
-        <button type="button" data-v="shoes">신발</button>
-        <button type="button" data-v="bag">가방</button>
-        <button type="button" data-v="hat">모자</button>
-        <button type="button" data-v="accessory">액세서리</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="q">
-      <legend>가격 <span class="hint">여러 개 선택</span></legend>
-      <div class="chips" data-key="prices">
-        <button type="button" data-v="all">전체</button>
-        <button type="button" data-v="0">~10만</button>
-        <button type="button" data-v="1">10~30만</button>
-        <button type="button" data-v="2">30~70만</button>
-        <button type="button" data-v="3">70만~</button>
-      </div>
-    </fieldset>
-
-    <div class="ob-foot">
-      <p class="count" id="ob-count" aria-live="polite"></p>
-      <button class="btn" id="start" type="button">시작하기</button>
-      <button class="link" id="ob-login" type="button" hidden>이미 계정이 있나요? <b>로그인</b></button>
-    </div>
+    <div class="ob-art" id="ob-art" aria-hidden="true"></div>
   </section>
 
   <!-- 2. 피드 -->
   <section class="screen feed" id="feed" hidden aria-label="상품 피드">
     <header class="topbar">
-      <span class="wordmark">태핑</span>
+      <span class="wordmark"><span class="mark" aria-hidden="true"></span>TAPPING</span>
       <div class="top-actions">
         <button class="icon-btn" id="open-likes" type="button" aria-label="찜 목록">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
-          <span class="badge-count" id="like-count">0</span>
+          <span class="badge-count" id="like-count"></span>
         </button>
         <button class="icon-btn" id="open-settings" type="button" aria-label="설정 바꾸기">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
@@ -85,60 +94,70 @@
       <button class="n-close" id="nudge-close" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>
     </div>
 
-    <div class="stage" id="stage" role="button" tabindex="0" aria-label="화면을 탭하면 다음 상품">
-      <div class="card" id="card">
-        <div class="photo"><img id="photo" alt="" referrerpolicy="no-referrer" decoding="async"></div>
-        <div class="info">
-          <span class="collab" id="collab" hidden>COLLAB</span>
-          <p class="brand" id="brand"></p>
-          <p class="title" id="title"></p>
-          <p class="price"><span id="price"></span><span class="mall" id="mall"></span></p>
-        </div>
+    <main class="viewer" id="viewer">
+      <div class="stage" id="stage" role="button" tabindex="0" aria-label="다음 상품 보기">
+        <figure class="photo" id="card" data-theme="light"><img id="photo" alt="" referrerpolicy="no-referrer" decoding="async"></figure>
+        <span class="next-cue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        <p class="coach" id="coach">빈 곳을 탭하면 다음 상품</p>
       </div>
-      <p class="coach" id="coach">빈 곳을 탭하면 다음 상품</p>
-    </div>
 
-    <div class="actions" aria-label="상품 반응">
-      <button class="act like" id="btn-like" type="button" aria-label="좋아요 (L)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
-      </button>
-      <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>
-      </button>
-      <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5 8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
-      </button>
-    </div>
+      <section class="detail" id="detail" aria-live="polite">
+        <div class="info" id="info">
+          <div class="tags">
+            <span class="chip chip--brand" id="collab" hidden>COLLAB</span>
+            <span class="chip chip--ink" id="new" hidden>NEW</span>
+          </div>
+          <p class="mall" id="mall"></p>
+          <h2 class="brand" id="brand"></h2>
+          <p class="p-title" id="title"></p>
+          <p class="price figure" id="price"></p>
+        </div>
+
+        <div class="actions" aria-label="상품 반응">
+          <button class="act like" id="btn-like" type="button" aria-label="찜하기 (L)" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
+            <span class="act__label">찜하기</span><kbd class="kbd">L</kbd>
+          </button>
+          <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>
+            <span class="act__label">별로예요</span><kbd class="kbd">D</kbd>
+          </button>
+          <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5 8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
+            <span class="act__label">구매하러 가기</span><kbd class="kbd">B</kbd>
+          </button>
+        </div>
+        <button class="next-btn" id="btn-next" type="button">다음 상품 <kbd class="kbd">Space</kbd></button>
+        <p class="pc-hint">사진을 클릭해도 넘어가요</p>
+      </section>
+    </main>
   </section>
 
   <!-- 3. 찜 목록 -->
-  <div class="sheet" id="likes" hidden role="dialog" aria-modal="true" aria-labelledby="likes-title">
-    <div class="sheet-panel">
-      <div class="sheet-head">
-        <h2 id="likes-title">찜한 상품 <span class="num" id="likes-total"></span></h2>
-        <button class="icon-btn" id="close-likes" type="button" aria-label="닫기">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        </button>
-      </div>
+  <dialog class="sheet" id="likes" aria-labelledby="likes-title">
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h2 class="sheet-title" id="likes-title">찜한 상품 <span class="num" id="likes-total"></span></h2>
+      <button class="icon-btn" id="close-likes" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="sheet__body">
       <div class="filter-rows">
-        <div class="tabs" id="like-cats" role="tablist" aria-label="카테고리"></div>
-        <div class="tabs sub" id="like-subs" role="tablist" aria-label="세부 분류" hidden></div>
+        <div class="filters" id="like-cats" role="tablist" aria-label="카테고리"></div>
+        <div class="filters sub" id="like-subs" role="tablist" aria-label="세부 분류" hidden></div>
       </div>
       <div id="like-list"></div>
-      <p class="empty" id="likes-empty">아직 찜한 상품이 없어요. ♥를 눌러 모아 보세요.</p>
+      <p class="empty-note" id="likes-empty">아직 찜한 상품이 없어요. ♥를 눌러 모아 보세요.</p>
     </div>
-  </div>
+  </dialog>
 
   <!-- 4. 로그인 · 회원가입 · 내 계정 -->
-  <div class="sheet" id="auth" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title">
-    <div class="sheet-panel auth-panel">
-      <div class="sheet-head">
-        <h2 id="auth-title">로그인</h2>
-        <button class="icon-btn" id="close-auth" type="button" aria-label="닫기">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        </button>
-      </div>
-
+  <dialog class="sheet" id="auth" aria-labelledby="auth-title">
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h2 class="sheet-title" id="auth-title">로그인</h2>
+      <button class="icon-btn" id="close-auth" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="sheet__body">
       <div id="auth-guest">
         <p class="auth-reason" id="auth-reason"></p>
         <ul class="perks">
@@ -146,17 +165,17 @@
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>싫어요 누른 스타일은 덜 보여 주기</li>
           <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9Z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/></svg>반응을 학습해 내 취향대로 추천</li>
         </ul>
-        <div class="seg auth-tabs" role="tablist" aria-label="로그인 또는 회원가입">
-          <button type="button" role="tab" data-mode="login" aria-selected="true">로그인</button>
-          <button type="button" role="tab" data-mode="signup" aria-selected="false">회원가입</button>
+        <div class="seg seg--full auth-tabs" role="tablist" aria-label="로그인 또는 회원가입">
+          <button class="seg__btn" type="button" role="tab" data-mode="login" aria-selected="true" aria-pressed="true">로그인</button>
+          <button class="seg__btn" type="button" role="tab" data-mode="signup" aria-selected="false" aria-pressed="false">회원가입</button>
         </div>
         <form id="auth-form" novalidate>
-          <label class="field"><span>이메일</span><input id="auth-email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@example.com"></label>
-          <label class="field"><span>비밀번호</span><input id="auth-pw" type="password" autocomplete="current-password" placeholder="비밀번호"></label>
-          <label class="field" id="pw2-field" hidden><span>비밀번호 확인</span><input id="auth-pw2" type="password" autocomplete="new-password" placeholder="한 번 더 입력"></label>
-          <label class="check"><input id="auth-keep" type="checkbox" checked><span>자동 로그인</span></label>
+          <label class="field"><span>이메일</span><input class="input" id="auth-email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" placeholder="name@example.com"></label>
+          <label class="field"><span>비밀번호</span><input class="input" id="auth-pw" type="password" autocomplete="current-password" placeholder="비밀번호"></label>
+          <label class="field" id="pw2-field" hidden><span>비밀번호 확인</span><input class="input" id="auth-pw2" type="password" autocomplete="new-password" placeholder="한 번 더 입력"></label>
+          <label class="check"><input class="switch" id="auth-keep" type="checkbox" checked><span>자동 로그인</span></label>
           <p class="form-error" id="auth-error" role="alert"></p>
-          <button class="btn" id="auth-submit" type="submit">로그인</button>
+          <button class="btn btn--lg btn--block" id="auth-submit" type="submit">로그인</button>
         </form>
         <p class="fine">베타 서비스예요. 이메일은 로그인과 찜·취향 저장에만 써요.</p>
       </div>
@@ -164,22 +183,22 @@
       <div id="auth-user" hidden>
         <div class="me-card">
           <span class="avatar lg" id="me-initial"></span>
-          <div><b id="me-email"></b><span class="role-badge" id="me-admin" hidden>관리자</span><p id="me-keep"></p></div>
+          <div><b id="me-email"></b><span class="chip chip--brand role-badge" id="me-admin" hidden>관리자</span><p id="me-keep"></p></div>
         </div>
         <div class="me-stats">
-          <div><b id="me-likes">0</b><span>찜</span></div>
-          <div><b id="me-reacts">0</b><span>반응 (학습에 쓰인 횟수)</span></div>
+          <div class="stat"><span class="stat__value" id="me-likes">0</span><span class="stat__label">찜</span></div>
+          <div class="stat"><span class="stat__value" id="me-reacts">0</span><span class="stat__label">반응 (학습에 쓰인 횟수)</span></div>
         </div>
         <section class="admin" id="admin" hidden>
-          <h3>관리자 대시보드</h3>
+          <h3 class="section-title">관리자 대시보드</h3>
           <div class="admin-grid" id="admin-grid"></div>
           <h4>많이 찜한 상품</h4>
           <ol class="admin-top" id="admin-top"></ol>
         </section>
-        <button class="btn ghost" id="sign-out" type="button">로그아웃</button>
+        <button class="btn btn--secondary btn--lg btn--block" id="sign-out" type="button">로그아웃</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>

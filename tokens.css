@@ -1,0 +1,200 @@
+/* ==========================================================
+   SUMIN Design System — Tokens  (2.0 초안, 2026-11-07)
+   모든 색·글자·간격·모양·모션 값은 여기서만 정의한다. 화면·컴포넌트는 var()로만 쓴다.
+   - 테마: color-scheme(light/dark)로 전환. 색은 light-dark(라이트, 다크) 한 줄로 두 테마를 함께 정의
+   - 팔레트: data-palette="classic | cobalt | volt | tangerine" (어떤 요소에든 붙이면 그 안만 바뀜)
+   원칙·사용 규칙: ./DESIGN.md   살아 있는 가이드: ./index.html
+   ========================================================== */
+
+/* ---------- 1. 기반 : 테마·팔레트와 무관한 값 ---------- */
+:root {
+  color-scheme: light dark;             /* 기본은 시스템 설정을 따름 */
+
+  /* 글꼴 */
+  --f-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+
+  /* 글자 크기 — 문서형(화면 따라 커짐) */
+  --t-display-xl: clamp(2.75rem, 1.55rem + 5vw, 5.5rem);    /* 44 → 88 */
+  --t-display: clamp(2.25rem, 1.45rem + 3.4vw, 4rem);       /* 36 → 64 */
+  --t-headline: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);     /* 28 → 40 */
+  --t-title: clamp(1.375rem, 1.25rem + .55vw, 1.75rem);     /* 22 → 28 */
+  --t-lead: clamp(1.0625rem, 1rem + .3vw, 1.25rem);         /* 17 → 20 */
+  /* 글자 크기 — 제품형(고정) */
+  --t-hero-num: 3rem;      /* 48 화면당 1개 */
+  --t-kpi: 2rem;           /* 32 지표 */
+  --t-h1: 1.75rem;         /* 28 페이지 제목 */
+  --t-h2: 1.25rem;         /* 20 섹션 */
+  --t-h3: 1.0625rem;       /* 17 카드 제목 */
+  --t-body-lg: 1.0625rem;  /* 17 읽는 글 */
+  --t-body: .9375rem;      /* 15 기본 */
+  --t-label: .8125rem;     /* 13 보조·라벨 */
+  --t-caption: .75rem;     /* 12 축·메타 */
+
+  --lh-display: 1.05;  --lh-headline: 1.15;  --lh-title: 1.25;
+  --lh-ui: 1.5;        --lh-body: 1.6;       --lh-read: 1.75;
+  --tr-display: -.045em; --tr-headline: -.035em; --tr-title: -.025em;
+  --tr-body: -.006em;    --tr-num: -.03em;       --tr-caps: .12em;
+
+  /* 간격 (4px 단위) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 144px;
+  --section-gap: clamp(72px, 10vw, 160px);
+
+  /* 모양 */
+  --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
+  --r-card: var(--r-lg);
+
+  /* 배치 */
+  --w-page: 1200px;  --w-read: 680px;  --gutter: clamp(16px, 4vw, 40px);
+  --w-sidebar: 264px; --h-topbar: 56px; --w-sheet: 560px;
+  --h-sm: 32px; --h-md: 40px; --h-lg: 52px; --hit: 44px;   /* 컨트롤 높이 · 터치 최소 영역 */
+
+  /* 층 */
+  --z-nav: 40; --z-overlay: 80; --z-toast: 100;
+
+  /* 모션 — 짧게, 의미 있게. 정보는 애니메이션보다 먼저 보인다 */
+  --dur-1: 90ms;    /* 누름 피드백 */
+  --dur-2: 160ms;   /* hover, 작은 상태 변화 */
+  --dur-3: 240ms;   /* 탭·토글·세그먼트, 퇴장 */
+  --dur-4: 320ms;   /* 등장: 시트·대화상자·토스트·카드 */
+  --dur-5: 480ms;   /* 큰 면·화면 전환 */
+  --dur-hero: 800ms;/* 문서형 히어로 (조작을 막지 않을 때만) */
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);       /* 등장: 빠르게 시작해 부드럽게 멈춤 */
+  --ease-in: cubic-bezier(.55, 0, .8, .2);        /* 퇴장: 머뭇거리지 않고 사라짐 */
+  --ease-spring: linear(0, .11 5%, .322 10%, .546 15%, .734 20%, .872 25%, .961 30%, 1.01 35%, 1.032 40%, 1.037 45%, 1.032 50%, 1.024 55%, 1.016 60%, 1.009 65%, 1.004 70%, 1.001 75%, 1);
+                     /* 감쇠비 0.72 스프링, 최대 3.7% 오버슈트: 토글·세그먼트·들림 */
+  --stagger: 28ms;  /* 순차 등장 간격, 최대 6개까지만(≤ 170ms) */
+  --rise: 10px;     /* 등장 이동 거리 */
+
+  /* 상태 색 — 팔레트와 무관하게 고정. 색은 아이콘에만, 글자는 잉크색 */
+  --c-success: light-dark(#12805c, #4cc59a);  --c-success-soft: light-dark(#e6f4ee, #10291f);
+  --c-warning: light-dark(#b45309, #f0b04a);  --c-warning-soft: light-dark(#fdf1e3, #2e2210);
+  --c-danger:  light-dark(#c4372b, #ff7b6e);  --c-danger-soft:  light-dark(#fcebea, #331614);
+  --c-idle: #8a909d;                          --c-idle-soft:    light-dark(#eef0f4, #1d212b);
+
+  /* 그림자·재질 */
+  --shadow-1: 0 1px 2px light-dark(rgb(16 20 30 / .05), rgb(0 0 0 / .45)), 0 2px 10px light-dark(rgb(16 20 30 / .04), rgb(0 0 0 / .2));
+  --shadow-2: 0 4px 14px light-dark(rgb(16 20 30 / .08), rgb(0 0 0 / .4)), 0 18px 44px light-dark(rgb(16 20 30 / .1), rgb(0 0 0 / .45));
+  --shadow-3: 0 24px 72px light-dark(rgb(16 20 30 / .2), rgb(0 0 0 / .62));
+  --edge: inset 0 1px 0 light-dark(rgb(255 255 255 / 0), rgb(255 255 255 / .06));   /* 다크에서 면 윗변 하이라이트 */
+  --c-scrim: light-dark(rgb(10 12 18 / .34), rgb(0 0 0 / .6));
+  --blur: blur(24px) saturate(1.7);
+}
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"]  { color-scheme: dark; }
+
+/* ---------- 2. 팔레트 : 시그니처 색과 중립색 ---------- */
+/* 클래식 — Navy × Apple Blue (v1.0, 현재 기본) */
+:root, [data-palette="classic"] {
+  --c-bg: light-dark(#ffffff, #0b0d12);       --c-bg-app: light-dark(#f4f6fa, #0b0d12);
+  --c-surface: light-dark(#ffffff, #14171e);  --c-surface-2: light-dark(#f4f6fa, #1a1e27);
+  --c-surface-3: light-dark(#eceff5, #222733); --c-raised: light-dark(#ffffff, #2a303c);
+  --c-ink: light-dark(#111318, #f2f4f9);      --c-ink-2: light-dark(#3b3f48, #c6cbd5);
+  --c-muted: light-dark(#666d7d, #8a909d);
+  --c-line: light-dark(#e6e9f0, #232833);     --c-line-strong: light-dark(#cdd2dd, #343a47);
+  --c-line-control: light-dark(#8a909d, #626a7a);
+  --c-brand: light-dark(#0071e3, #2997ff);    --c-on-brand: light-dark(#ffffff, #0b0d12);
+  --c-accent: light-dark(#0071e3, #2997ff);   --c-accent-soft: light-dark(#e8f2fd, #10233d);
+  --c-accent-strong: light-dark(#0062c4, #2997ff);
+  --c-depth: #14213d;
+  --c-btn-bg: light-dark(#14213d, #f2f4f9);   --c-btn-fg: light-dark(#ffffff, #0b0d12);
+  --c-btn-hover: light-dark(#1f3260, #ffffff); --c-btn-ring: transparent;
+  --c-selection: light-dark(#cfe3fb, #1a3a66);
+  --viz-1: light-dark(#0071e3, #2997ff); --viz-2: light-dark(#d4691c, #d07a38);
+  --viz-3: light-dark(#1f9384, #36a898); --viz-4: light-dark(#8b5cf6, #9878e6);
+  --viz-focus: var(--viz-1);
+  --viz-grid: light-dark(#edf0f5, #1f242e);   --viz-axis: light-dark(#cdd2dd, #343a47);
+  --c-code-bg: light-dark(#0b0d12, #07090d);
+}
+
+/* A 코발트 — Midnight × Cobalt: 블루 취향을 잇되 '내 색'으로 */
+[data-palette="cobalt"] {
+  --c-bg: light-dark(#ffffff, #080b14);       --c-bg-app: light-dark(#f3f5fa, #080b14);
+  --c-surface: light-dark(#ffffff, #10141f);  --c-surface-2: light-dark(#f3f5fa, #171c2a);
+  --c-surface-3: light-dark(#e9edf5, #20263a); --c-raised: light-dark(#ffffff, #262d42);
+  --c-ink: light-dark(#0d1222, #eef1f8);      --c-ink-2: light-dark(#39415a, #c1c7d6);
+  --c-muted: light-dark(#626b82, #8a92a8);
+  --c-line: light-dark(#e2e6f0, #222839);     --c-line-strong: light-dark(#c9cfdd, #323a50);
+  --c-line-control: light-dark(#8890a4, #5f6880);
+  --c-brand: light-dark(#2d5bff, #3d68ff);    --c-on-brand: #ffffff;
+  --c-accent: light-dark(#2d5bff, #6e8eff);   --c-accent-soft: light-dark(#eaf0ff, #141f45);
+  --c-accent-strong: light-dark(#2449d6, #8ea7ff);
+  --c-depth: #101b3f;
+  --c-btn-bg: var(--c-brand);                 --c-btn-fg: #ffffff;
+  --c-btn-hover: light-dark(#2550f0, #5078ff); --c-btn-ring: transparent;
+  --c-selection: light-dark(#d5e0ff, #1c2c66);
+  --viz-1: light-dark(#2d5bff, #6283f5); --viz-2: light-dark(#d4691c, #d07a38);
+  --viz-3: light-dark(#1f9384, #36a898); --viz-4: light-dark(#8b5cf6, #a06ed4);
+  --viz-focus: light-dark(#2d5bff, #6e8eff);
+  --viz-grid: light-dark(#edf0f7, #1d2335);   --viz-axis: light-dark(#c9cfdd, #323a50);
+  --c-code-bg: light-dark(#0b1020, #05070e);
+}
+
+/* B 볼트 — Ink × Volt: 검정 위 형광 라임, 가장 대담한 한 색 */
+[data-palette="volt"] {
+  --c-bg: light-dark(#ffffff, #0a0a0a);       --c-bg-app: light-dark(#f5f5f2, #0a0a0a);
+  --c-surface: light-dark(#ffffff, #141414);  --c-surface-2: light-dark(#f5f5f2, #1b1b1b);
+  --c-surface-3: light-dark(#ebebe6, #242424); --c-raised: light-dark(#ffffff, #2b2b2b);
+  --c-ink: light-dark(#0a0a0a, #f4f4f0);      --c-ink-2: light-dark(#3c3c38, #c9c9c3);
+  --c-muted: light-dark(#6a6a64, #8e8e87);
+  --c-line: light-dark(#e5e5e0, #262626);     --c-line-strong: light-dark(#cdcdc6, #363636);
+  --c-line-control: light-dark(#8b8b84, #6a6a63);
+  --c-brand: #d4ff3a;                         --c-on-brand: #0a0a0a;
+  --c-accent: light-dark(#4a6500, #d4ff3a);   --c-accent-soft: light-dark(#f1ffc4, #222b06);
+  --c-accent-strong: light-dark(#3d5400, #d4ff3a);
+  --c-depth: #0a0a0a;
+  --c-btn-bg: var(--c-brand);                 --c-btn-fg: #0a0a0a;
+  --c-btn-hover: light-dark(#c6f52a, #e0ff6b); --c-btn-ring: light-dark(rgb(10 10 10 / .14), transparent);
+  --c-selection: light-dark(#e8ff9c, #3a4a0a);
+  --viz-1: light-dark(#56730a, #7f9f22); --viz-2: light-dark(#1f78c8, #3d9be0);
+  --viz-3: light-dark(#d4691c, #d07a38); --viz-4: light-dark(#8b5cf6, #9878e6);
+  --viz-focus: light-dark(#0a0a0a, #d4ff3a);   /* 라이트: 검정 막대, 다크: 형광 막대 */
+  --viz-grid: light-dark(#ededea, #222222);   --viz-axis: light-dark(#cdcdc6, #363636);
+  --c-code-bg: light-dark(#0a0a0a, #050505);
+}
+
+/* C 탠저린 — Graphite × Tangerine: 따뜻한 회색 위 탠저린 */
+[data-palette="tangerine"] {
+  --c-bg: light-dark(#ffffff, #0e0c0a);       --c-bg-app: light-dark(#f7f4f0, #0e0c0a);
+  --c-surface: light-dark(#ffffff, #171411);  --c-surface-2: light-dark(#f7f4f0, #1f1b17);
+  --c-surface-3: light-dark(#eee9e2, #29241e); --c-raised: light-dark(#ffffff, #312b24);
+  --c-ink: light-dark(#16120e, #f7f2eb);      --c-ink-2: light-dark(#463f37, #d0c7bb);
+  --c-muted: light-dark(#736a60, #9a9084);
+  --c-line: light-dark(#ebe5dd, #2a251f);     --c-line-strong: light-dark(#d6cec3, #3a332b);
+  --c-line-control: light-dark(#938a7f, #6a6157);
+  --c-brand: #ff6a2b;                         --c-on-brand: #16120e;
+  --c-accent: light-dark(#c2410c, #ff6a2b);   --c-accent-soft: light-dark(#fff0e8, #3a1a0b);
+  --c-accent-strong: light-dark(#a8380a, #ff8a55);
+  --c-depth: #241912;
+  --c-btn-bg: var(--c-brand);                 --c-btn-fg: #16120e;
+  --c-btn-hover: light-dark(#ff7a40, #ff7f47); --c-btn-ring: transparent;
+  --c-selection: light-dark(#ffd9c7, #5a2a12);
+  --viz-1: light-dark(#c2410c, #e85d22); --viz-2: light-dark(#1f78c8, #3d9be0);
+  --viz-3: light-dark(#a87a00, #b08a1c); --viz-4: light-dark(#1f9384, #36a898);
+  --viz-focus: light-dark(#c2410c, #ff6a2b);
+  --viz-grid: light-dark(#efeae3, #25211c);   --viz-axis: light-dark(#d6cec3, #3a332b);
+  --c-code-bg: light-dark(#16120e, #080605);
+}
+
+/* ---------- 3. 팔레트에서 파생되는 값 ---------- */
+:root, [data-palette] {
+  --c-info: var(--c-accent);  --c-info-soft: var(--c-accent-soft);
+  --c-glass: color-mix(in srgb, var(--c-surface) 76%, transparent);
+  --c-code-ink: #c6cbd5;  --c-code-muted: #8a909d;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--c-accent) 40%, transparent);
+}
+
+/* ---------- 4. 모션 줄이기: 움직임 대신 즉시 전환 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-1: 1ms; --dur-2: 1ms; --dur-3: 1ms; --dur-4: 1ms; --dur-5: 1ms; --dur-hero: 1ms; --stagger: 0ms; --rise: 0px; --ease-spring: linear; }
+}
+
+/* ---------- 5. v1.0 이름 호환 (기존 화면이 깨지지 않게) ---------- */
+:root {
+  --t-p-hero: var(--t-hero-num); --t-p-kpi: var(--t-kpi); --t-p-title: var(--t-h1);
+  --t-p-h2: var(--t-h3); --t-p-body: var(--t-body); --t-p-small: var(--t-label); --t-p-micro: var(--t-caption);
+  --d-fast: var(--dur-2); --d-base: var(--dur-4); --d-slow: var(--dur-5);
+  --tracking-tight: -.03em; --tracking-num: var(--tr-num); --tracking-label: var(--tr-caps);
+}
