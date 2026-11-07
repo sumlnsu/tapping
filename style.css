@@ -8,7 +8,7 @@
 }
 
 html, body { height: 100%; }
-body.ds { background: var(--c-bg); overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body.ds { background: var(--c-bg-app); overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
 svg { width: var(--s-5); height: var(--s-5); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
@@ -20,7 +20,7 @@ button { cursor: pointer; }
 .mark { display: inline-block; flex: none; width: var(--s-3); height: var(--s-3); margin-right: var(--s-2); border-radius: 50%; background: var(--c-brand); box-shadow: 0 0 0 2px var(--c-ink); vertical-align: 1px; }
 
 /* ---------- 0. 로딩 ---------- */
-.boot { position: absolute; inset: 0; z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-4); background: var(--c-bg); transition: opacity var(--dur-3) var(--ease-in); }
+.boot { position: absolute; inset: 0; z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-4); background: var(--c-bg-app); transition: opacity var(--dur-3) var(--ease-in); }
 .boot .wordmark { font-size: var(--t-h2); }
 .boot__bar { position: relative; width: var(--s-9); height: 3px; overflow: hidden; border-radius: var(--r-pill); background: var(--c-surface-3); }
 .boot__bar::after { content: ""; position: absolute; inset: 0; width: 40%; border-radius: inherit; background: var(--c-ink); animation: boot-slide 1.1s var(--ease-standard) infinite; }
@@ -30,7 +30,14 @@ button { cursor: pointer; }
 /* ---------- 1. 시작 설정 ---------- */
 .onboard { padding: max(var(--s-6), env(safe-area-inset-top)) var(--s-5) max(var(--s-5), env(safe-area-inset-bottom)); overflow-y: auto; }
 .ob-main { display: flex; flex-direction: column; gap: var(--s-6); min-height: 100%; }
-.ob-head .eyebrow { display: flex; align-items: center; margin: 0 0 var(--s-3); color: var(--c-ink); }
+.ob-top { display: flex; align-items: center; gap: var(--s-1); min-height: var(--hit); margin-bottom: var(--s-3); }
+.ob-head .eyebrow { display: flex; align-items: center; margin: 0; color: var(--c-ink); }
+.ob-back { margin-left: calc(var(--s-3) * -1); width: var(--hit); height: var(--hit); color: var(--c-ink); }
+.ob-back svg { width: var(--s-5); height: var(--s-5); }
+.ob-edit-title { display: none; margin: 0; color: var(--c-ink); font: 750 var(--t-h2)/1.2 var(--f-sans); letter-spacing: -.02em; }
+.onboard.is-edit .ob-top { position: sticky; top: 0; z-index: 2; margin: calc(max(var(--s-6), env(safe-area-inset-top)) * -1) calc(var(--s-5) * -1) 0; padding: max(var(--s-3), env(safe-area-inset-top)) var(--s-5) var(--s-2); background: var(--c-glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.onboard.is-edit .eyebrow, .onboard.is-edit .ob-title, .onboard.is-edit .ob-head .lead { display: none; }
+.onboard.is-edit .ob-edit-title { display: block; }
 .ob-title { font-size: clamp(2.25rem, 1.6rem + 3vw, var(--t-display)); }
 .ob-title mark { padding: 0 .1em; border-radius: var(--r-xs); background: var(--c-brand); color: var(--c-on-brand); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .ob-head .lead { margin-top: var(--s-3); color: var(--c-muted); }
@@ -55,7 +62,7 @@ button { cursor: pointer; }
 .ob-art { display: none; }
 
 /* ---------- 2. 피드 ---------- */
-.topbar { flex: none; display: flex; align-items: center; justify-content: space-between; height: var(--h-topbar); padding: env(safe-area-inset-top) var(--s-2) 0 var(--s-5); }
+.topbar { flex: none; display: flex; align-items: center; justify-content: space-between; height: calc(var(--h-topbar) + env(safe-area-inset-top)); padding: env(safe-area-inset-top) var(--s-2) 0 var(--s-5); }
 .wordmark { display: inline-flex; align-items: center; color: var(--c-ink); font: 800 var(--t-body)/1 var(--f-sans); letter-spacing: var(--tr-caps); }
 .top-actions { display: flex; gap: var(--s-1); }
 .top-actions .icon-btn { position: relative; width: var(--hit); height: var(--hit); color: var(--c-ink); }
@@ -68,7 +75,7 @@ button { cursor: pointer; }
 .avatar.lg { display: grid; flex: none; width: var(--s-7); height: var(--s-7); font-size: var(--t-h2); }
 
 /* 보는 칸: 모바일은 한 장의 카드 */
-.viewer { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 0 var(--s-3) max(var(--s-3), env(safe-area-inset-bottom)); border-radius: var(--r-xl); overflow: hidden; background: var(--c-surface); box-shadow: var(--edge), 0 0 0 1px var(--c-line); }
+.viewer { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: var(--s-2) var(--s-3) max(var(--s-4), env(safe-area-inset-bottom)); border-radius: var(--r-xl); overflow: hidden; background: var(--c-surface); box-shadow: var(--edge), var(--shadow-1), 0 0 0 1px var(--c-line); }
 .stage { position: relative; flex: 1; min-height: 0; cursor: pointer; outline: none; user-select: none; }
 .stage:focus-visible { box-shadow: inset var(--focus-ring); }
 .photo { position: absolute; inset: 0; margin: 0; padding: var(--s-5); background: var(--c-surface); }
@@ -184,7 +191,6 @@ button { cursor: pointer; }
 /* ---------- PC (노트북 1024px~) : 큰 사진 + 정보 칸, 사진 클릭 = 다음 ---------- */
 @media (min-width: 1024px) {
   :root { --app-w: var(--w-page); }
-  body.ds { background: var(--c-bg-app); }
 
   .onboard { flex-direction: row; gap: var(--s-8); align-items: stretch; padding: var(--s-7) var(--gutter); }
   .ob-main { flex: none; width: calc(var(--detail-w) * 1.35); min-height: 0; justify-content: center; }

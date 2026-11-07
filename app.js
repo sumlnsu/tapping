@@ -44,7 +44,7 @@
   const disliked = new Set();
   let likes = [], events = [];
   let pendingAct = null;                   // 비로그인 때 누른 ❤️/👎 → 로그인 직후 이어서 실행
-  let recent = [];                         // 최근 노출 브랜드 (연속 노출 방지)
+  const shownLog = [];                     // 이번에 보여 준 상품 기록 (최근 30장: 브랜드·몰·세부 분류 다양성용)
   let current = null, nextItem = null, shownAt = 0, busy = false;
 
   const priceBucket = p => (p < 100000 ? 0 : p < 300000 ? 1 : p < 700000 ? 2 : 3);
@@ -63,15 +63,41 @@
     if (s.gender === 'women' && f.g === 'men') return false;
     return s.cats.includes(f.c) && s.prices.includes(priceBucket(f.p));
   }
+  // 찜한 상품·싫어요 누른 상품·이미 본 상품은 다시 보여 주지 않는다 (찜은 찜 목록에서 보기)
   function pool() {
-    let list = FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && f !== current && f !== nextItem);
-    if (!list.length) {                       // 한 바퀴 다 봤으면 본 기록만 초기화 (싫어요는 유지)
+    const liked = new Set(likes);
+    let list = FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem);
+    if (!list.length) {                       // 한 바퀴 다 봤으면 본 기록만 초기화 (찜·싫어요는 계속 제외)
       seen.clear();
       toast('조건에 맞는 상품을 한 바퀴 다 봤어요');
-      list = FEED.filter(f => matches(f, settings) && !disliked.has(f.id) && f !== current);
+      list = FEED.filter(f => matches(f, settings) && !disliked.has(f.id) && !liked.has(f.id) && f !== current);
     }
     return list;
   }
+
+  // ---------- 다양성: 같은 브랜드·몰·세부 분류가 연달아 나오지 않게 ----------
+  const lastN = (n, key) => shownLog.slice(-n).map(x => x[key]);
+  // level 0이 가장 엄격. 후보가 없으면 한 단계씩 풀어 준다
+  function allowed(f, level) {
+    if (level >= 3) return true;
+    if (lastN([5, 3, 1][level], 'b').includes(f.b)) return false;                       // 같은 브랜드: 최근 5장 안에 다시 안 나옴
+    const malls = lastN(2, 'm');
+    if (level <= 1 && malls.length === 2 && malls.every(m => m === f.m)) return false;   // 같은 몰 3연속 금지
+    const subs = lastN(2, 's');
+    if (level === 0 && f.s && subs.length === 2 && subs.every(s => s === f.s)) return false;  // 같은 세부 분류 3연속 금지
+    return true;
+  }
+  function diverse(list) {
+    for (let level = 0; level < 3; level++) { const l = list.filter(f => allowed(f, level)); if (l.length) return l; }
+    return list;
+  }
+  // 피로도: 최근 20장에 많이 나온 브랜드·몰일수록 감점 → 좋아하는 브랜드도 간격을 두고 다시 나온다
+  function fatigue(f) {
+    let b = 0, m = 0;
+    for (const x of shownLog.slice(-20)) { if (x.b === f.b) b++; if (x.m === f.m) m++; }
+    return 0.6 * b + 0.15 * m;
+  }
+  const sat = v => 2.5 * Math.tanh((v || 0) / 2.5);      // 학습 점수 포화: 한 브랜드가 추천을 독차지하지 않게
 
   // ---------- 추천 (1단계: 규칙 기반 + 신상품·콜라보 가산, 로그인 사용자만 학습) ----------
   const W = { brand: 1.0, cat: 0.6, price: 0.5, mall: 0.4, collab: 0.5 };
@@ -82,32 +108,35 @@
   function pick() {
     const list = pool();
     if (!list.length) return null;
-    const sample = list.length > 600 ? shuffle(list).slice(0, 600) : list;
+    const sample = diverse(list.length > 800 ? shuffle(list).slice(0, 800) : list);
 
-    // 콜드 스타트(비로그인 포함): 반응 10번 전까지는 카테고리·브랜드를 골고루, 신상품·콜라보일수록 자주
+    // 콜드 스타트(비로그인 포함): 반응 10번 전까지는 카테고리를 돌아가며, 신상품·콜라보일수록 자주
     if (interactions() < 10) {
-      const shownCats = events.slice(-12).map(e => BY_ID.get(e.id)?.c);
+      const shownCats = lastN(12, 'c');
       const catOrder = [...settings.cats].sort((a, b) => count(shownCats, a) - count(shownCats, b));
       for (const c of catOrder) {
-        const cand = sample.filter(f => f.c === c && !recent.includes(f.b));
-        if (cand.length) return weighted(cand, f => 0.15 + prior(f));
+        const cand = sample.filter(f => f.c === c);
+        if (cand.length) return weighted(cand, f => (0.15 + prior(f)) * Math.exp(-fatigue(f)));
       }
       return weighted(sample, f => 0.15 + prior(f));
     }
 
-    // 20%는 새로운 상품 탐색 (여기서도 신상품·콜라보 우대)
-    if (Math.random() < 0.2) return weighted(sample.filter(f => !recent.includes(f.b)), f => 0.3 + prior(f)) || rand(sample);
-
-    let best = null, bestScore = -Infinity;
-    for (const f of sample) {
-      const k = keys(f);
-      let s = W_PRIOR * prior(f);
-      for (const dim in W) s += W[dim] * (profile[dim][k[dim]] || 0);
-      if (recent.includes(f.b)) s -= 1.2;
-      s += Math.random() * 0.6;
-      if (s > bestScore) { bestScore = s; best = f; }
+    // 4장 중 1장꼴: 최근 20장에 없던 브랜드에서 새로 발견 (신상품·콜라보 우대)
+    if (Math.random() < 0.25) {
+      const recent20 = new Set(lastN(20, 'b'));
+      const discover = sample.filter(f => !recent20.has(f.b));
+      if (discover.length) return weighted(discover, f => 0.3 + prior(f));
     }
-    return best;
+
+    // 취향 점수(포화) + 신상품·콜라보 − 피로도 → 상위 12개 중에서 점수에 비례해 확률적으로 (늘 1등만 고르지 않음)
+    const scored = sample.map(f => {
+      const k = keys(f);
+      let s = W_PRIOR * prior(f) - fatigue(f) + Math.random() * 0.3;
+      for (const dim in W) s += W[dim] * sat(profile[dim][k[dim]]);
+      return [f, s];
+    }).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const top = scored[0][1];
+    return weighted(scored, ([, s]) => Math.exp((s - top) / 0.6))[0];
   }
 
   const clamp = v => Math.max(-5, Math.min(5, +v.toFixed(3)));
@@ -151,7 +180,8 @@
     }
     seen.add(f.id);
     store.set('seen', [...seen].slice(-4000));
-    recent = [f.b, ...recent].slice(0, 2);
+    shownLog.push({ b: f.b, m: f.m, s: f.s, c: f.c });
+    if (shownLog.length > 30) shownLog.shift();
     $('photo').src = f.im;
     $('photo').alt = `${f.b} ${f.t}`;
     $('brand').textContent = f.b;
@@ -314,8 +344,41 @@
     store.set('settings', settings);
     store.set('settingsV', SETTINGS_VERSION);
     persist();
+    if (editing) { editing = false; dropLayer('settings'); }
     showFeed();
   });
+
+  // ---------- 화면 쌓기: 휴대폰 '뒤로' 버튼·제스처로 설정 화면과 시트를 닫는다 ----------
+  const layers = [];
+  let skipPop = false;
+  function pushLayer(name, close) { layers.push({ name, close }); history.pushState({ tp: name }, ''); }
+  function dropLayer(name) {               // 화면 안의 버튼으로 닫았을 때: 쌓아 둔 '뒤로' 기록도 하나 지운다
+    if (!layers.length || layers[layers.length - 1].name !== name) return;
+    layers.pop();
+    skipPop = true;
+    history.back();
+  }
+  window.addEventListener('popstate', () => {
+    if (skipPop) { skipPop = false; return; }
+    const top = layers.pop();
+    if (top) top.close();
+  });
+
+  // 피드에서 조절 버튼 → 설정 바꾸기 (뒤로 가면 보던 상품 그대로)
+  let editing = false;
+  function openSettings() {
+    editing = true;
+    showOnboard();
+    pushLayer('settings', backToFeed);
+  }
+  function backToFeed() {
+    editing = false;
+    $('onboard').classList.remove('is-edit');
+    $('onboard').hidden = true;
+    $('feed').hidden = false;
+    $('stage').focus({ preventScroll: true });
+  }
+  $('ob-back').addEventListener('click', () => { dropLayer('settings'); backToFeed(); });
 
   function showFeed() {
     $('onboard').hidden = true;
@@ -327,14 +390,26 @@
     if (store.get('coachDone', false)) hideCoach(); else setTimeout(hideCoach, 3500);
   }
   function showOnboard() {
+    const edit = editing && !!settings;        // 처음 시작이 아니라 설정을 바꾸러 온 경우
+    $('onboard').classList.toggle('is-edit', edit);
+    $('ob-back').hidden = !edit;
+    $('start').textContent = edit ? '적용하기' : '시작하기';
     $('feed').hidden = true;
     $('onboard').hidden = false;
+    $('onboard').scrollTop = 0;
     initOnboard();
   }
 
   // ---------- 시트 (DS dialog.sheet) ----------
-  function openSheet(id) { const d = $(id); if (!d.open) d.showModal(); }
+  function openSheet(id) {
+    const d = $(id);
+    if (d.open) return;
+    d.showModal();
+    pushLayer(id, () => { if (d.open) d.close(); });
+  }
   function closeSheet(id) { const d = $(id); if (d.open) d.close(); }
+  // 어떤 방법으로 닫혀도(X·바깥·Esc) '뒤로' 기록을 맞춘다
+  for (const id of ['likes', 'auth']) $(id).addEventListener('close', () => dropLayer(id));
   // 바깥(어두운 배경)을 누르면 닫기
   for (const id of ['likes', 'auth']) {
     $(id).addEventListener('click', e => {
@@ -670,7 +745,7 @@
   $('btn-buy').addEventListener('click', onBuy);
   $('open-likes').addEventListener('click', openLikes);
   $('close-likes').addEventListener('click', () => closeSheet('likes'));
-  $('open-settings').addEventListener('click', showOnboard);
+  $('open-settings').addEventListener('click', openSettings);
   $('open-account').addEventListener('click', () => openAuth());
   $('ob-login').addEventListener('click', () => openAuth());
   $('close-auth').addEventListener('click', closeAuth);
@@ -680,7 +755,8 @@
   $('photo').addEventListener('error', () => { if (current) { busy = false; advance('leave-next'); } });
   $('stage').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onSkip(); } });
   document.addEventListener('keydown', e => {
-    if ($('auth').open || $('likes').open || $('feed').hidden) return;     // 시트가 열려 있으면 Esc는 시트가 처리
+    if ($('auth').open || $('likes').open) return;                        // 시트가 열려 있으면 Esc는 시트가 처리
+    if ($('feed').hidden) { if (e.key === 'Escape' && editing) $('ob-back').click(); return; }
     if (e.target.closest && e.target.closest('input, textarea')) return;
     if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); onSkip(); }
     else if (e.key.toLowerCase() === 'l') onLike();
