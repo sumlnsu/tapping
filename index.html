@@ -6,16 +6,34 @@
 <meta name="theme-color" content="#0a0a0a">
 <meta name="description" content="고르지 말고, 넘기세요. 감도 높은 패션 아이템을 한 장씩 보여 주는 원탭 큐레이션">
 <title>태핑 TAPPING</title>
+<link rel="icon" href="brand/icon/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/icon/favicon-32.png" sizes="32x32">
+<link rel="icon" href="brand/icon/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="brand/icon/icon-180.png">
+<link rel="manifest" href="brand/icon/site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:title" content="태핑 TAPPING">
+<meta property="og:description" content="고르지 말고, 넘기세요.">
+<meta property="og:url" content="https://sumlnsu.github.io/tapping/">
+<meta property="og:image" content="https://sumlnsu.github.io/tapping/brand/og/og-light.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="components.css">
 <link rel="stylesheet" href="style.css">
+<script src="copy.js"></script>
 </head>
 <body class="ds">
 <div class="app" id="app">
 
-  <!-- 0. 데이터 받는 동안 -->
-  <div class="boot" id="boot" role="status"><span class="wordmark"><span class="mark" aria-hidden="true"></span>TAPPING</span><span class="boot__bar" aria-hidden="true"></span><span class="sr-only">불러오는 중</span></div>
+  <!-- 0. 데이터 받는 동안: 로고 모서리가 접혔다 펴지는 로딩 (브랜드 키트 5-4) -->
+  <div class="boot" id="boot" role="status">
+    <svg class="loader" viewBox="0 0 100 100" aria-hidden="true"><path class="ld-b" d="M32 10H68A22 22 0 0 1 90 32V68A22 22 0 0 1 68 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="ld-c" d="M94 48V94H48Z"/><path class="ld-f" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg>
+    <span class="boot__t" id="boot-label"></span>
+  </div>
+  <script>document.getElementById('boot-label').textContent = window.TAPPING_COPY.loading;</script>
 
   <!-- 1. 시작 설정 -->
   <section class="screen onboard" id="onboard" hidden aria-labelledby="ob-title">
@@ -23,9 +41,9 @@
       <header class="ob-head">
         <div class="ob-top">
           <button class="icon-btn ob-back" id="ob-back" type="button" aria-label="피드로 돌아가기" hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+            <svg class="ico" data-i="chevron-left" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#chevron-left"/></svg>
           </button>
-          <p class="eyebrow"><span class="mark" aria-hidden="true"></span>TAPPING</p>
+          <p class="wordmark ob-logo" role="img" aria-label="tapping"><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path class="lg-b" d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="lg-f" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg><span class="lg-l" style="--n:0">t</span><span class="lg-l" style="--n:1">a</span><span class="lg-l" style="--n:2">p</span><span class="lg-l" style="--n:3">p</span><span class="lg-l" style="--n:4">i</span><span class="lg-l" style="--n:5">n</span><span class="lg-l" style="--n:6">g</span></p>
           <h2 class="ob-edit-title">설정 바꾸기</h2>
         </div>
         <h1 class="display ob-title" id="ob-title">고르지 말고,<br><mark>넘기세요.</mark></h1>
@@ -78,17 +96,17 @@
   <!-- 2. 피드 -->
   <section class="screen feed" id="feed" hidden aria-label="상품 피드">
     <header class="topbar">
-      <span class="wordmark"><span class="mark" aria-hidden="true"></span>TAPPING</span>
+      <span class="wordmark" role="img" aria-label="tapping"><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path class="lg-b" d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="lg-f" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg>tapping</span>
       <div class="top-actions">
         <button class="icon-btn" id="open-likes" type="button" aria-label="찜 목록">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
+          <svg class="ico" data-i="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg>
           <span class="badge-count" id="like-count"></span>
         </button>
         <button class="icon-btn" id="open-settings" type="button" aria-label="설정 바꾸기">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+          <svg class="ico" data-i="sliders" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#sliders"/></svg>
         </button>
         <button class="icon-btn" id="open-account" type="button" aria-label="로그인">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 19.6c1.3-3.4 4-5.2 7.2-5.2s5.9 1.8 7.2 5.2"/></svg>
+          <svg class="ico" data-i="user" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#user"/></svg>
           <span class="avatar" id="acct-initial"></span>
         </button>
       </div>
@@ -97,54 +115,100 @@
     <div class="nudge" id="nudge" hidden>
       <span>로그인하면 취향을 학습해 더 잘 골라 드려요</span>
       <button class="n-login" id="nudge-login" type="button">로그인</button>
-      <button class="n-close" id="nudge-close" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg></button>
+      <button class="n-close" id="nudge-close" type="button" aria-label="닫기"><svg class="ico" data-i="close" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#close"/></svg></button>
     </div>
 
-    <main class="viewer" id="viewer">
-      <div class="stage" id="stage" role="button" tabindex="0" aria-label="다음 상품 보기">
-        <figure class="photo" id="card" data-theme="light"><div class="pic"><img id="photo" alt="" referrerpolicy="no-referrer" decoding="async"></div></figure>
-        <span class="next-cue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-        <p class="coach" id="coach">빈 곳을 탭하면 다음 상품</p>
+    <main class="viewer" id="viewer" data-phase="idle">
+      <!-- 당겨서 새로 섞기 (터치) -->
+      <div class="pull" aria-hidden="true">
+        <svg viewBox="10 10 80 80"><path class="lg-b" d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="lg-f" id="pull-flap" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg>
+        <span id="pull-label"></span>
       </div>
 
-      <section class="detail" id="detail" aria-live="polite">
-        <div class="info" id="info">
-          <div class="tags">
-            <span class="chip chip--brand" id="collab" hidden>COLLAB</span>
-            <span class="chip chip--ink" id="new" hidden>NEW</span>
+      <!-- 카드 2장: 뒤 카드에는 다음 상품을 항상 미리 깔아 둔다 (Peel 전환) -->
+      <div class="deck" id="deck">
+        <article class="pcard back" id="shell-back" aria-hidden="true"></article>
+        <article class="pcard front" id="shell-front">
+          <div class="hit" id="stage" role="button" tabindex="0" aria-label="다음 상품 보기"></div>
+          <span class="next-cue" aria-hidden="true"><svg class="ico" data-i="arrow-right" viewBox="0 0 24 24"><use href="brand/icons/sprite.svg#arrow-right"/></svg></span>
+          <p class="coach" id="coach"></p>
+          <div class="actions" id="actions" aria-label="상품 반응">
+            <button class="act like" id="btn-like" type="button" aria-label="찜하기 (L)" aria-pressed="false">
+              <svg class="ico" data-i="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg>
+              <span class="act__label">찜하기</span><kbd class="kbd">L</kbd>
+            </button>
+            <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)">
+              <svg class="ico" data-i="thumbs-down" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#thumbs-down"/></svg>
+              <span class="act__label">별로예요</span><kbd class="kbd">D</kbd>
+            </button>
+            <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)">
+              <svg class="ico" data-i="bag" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#bag"/></svg>
+              <span class="act__label">구매하러 가기</span><kbd class="kbd">B</kbd>
+            </button>
           </div>
-          <p class="mall" id="mall"></p>
-          <h2 class="brand" id="brand"></h2>
-          <p class="p-title" id="title"></p>
-          <p class="price figure" id="price"></p>
+          <span class="peel peel--cut" aria-hidden="true"></span>
+          <span class="peel peel--flap" aria-hidden="true"><i></i></span>
+        </article>
+        <div class="buy-toast" id="buy-toast" role="status" hidden>
+          <svg class="ico" data-i="external" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#external"/></svg>
+          <span data-copy="buyToast"></span>
         </div>
+      </div>
 
-        <div class="actions" aria-label="상품 반응">
-          <button class="act like" id="btn-like" type="button" aria-label="찜하기 (L)" aria-pressed="false">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>
-            <span class="act__label">찜하기</span><kbd class="kbd">L</kbd>
-          </button>
-          <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>
-            <span class="act__label">별로예요</span><kbd class="kbd">D</kbd>
-          </button>
-          <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5 8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></svg>
-            <span class="act__label">구매하러 가기</span><kbd class="kbd">B</kbd>
-          </button>
+      <!-- PC: 오른쪽 정보 칸 -->
+      <section class="detail" id="detail">
+        <div class="info" id="d-info">
+          <div class="tags">
+            <span class="tp-badge tp-badge--collab" style="--n:0" hidden>COLLAB</span>
+            <span class="tp-badge tp-badge--new" style="--n:1" hidden>NEW</span>
+          </div>
+          <p class="mall"></p>
+          <h2 class="brand"></h2>
+          <p class="p-title"></p>
+          <p class="price figure"></p>
         </div>
+        <div id="actions-slot"></div>
         <button class="next-btn" id="btn-next" type="button">다음 상품 <kbd class="kbd">Space</kbd></button>
         <p class="pc-hint">사진을 클릭해도 넘어가요</p>
       </section>
+
+      <!-- 한 바퀴 다 봄 -->
+      <div class="state state--deck" id="allseen" hidden>
+        <picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/all-seen-dark.svg"><img class="state__art" src="brand/states/all-seen-light.svg" alt="" width="160" height="160"></picture>
+        <h2 class="state__t" data-copy="allSeenTitle"></h2>
+        <p class="state__b" data-copy="allSeenBody"></p>
+        <div class="state__btns">
+          <button class="btn btn--lg state__btn" id="reshuffle" type="button"><svg class="ico" data-i="refresh" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#refresh"/></svg><span data-copy="allSeenShuffle"></span></button>
+          <button class="btn btn--lg state__btn state__btn--2" id="see-likes" type="button" data-copy="allSeenLikes"></button>
+        </div>
+      </div>
     </main>
+    <p class="sr-only" id="sr-now" aria-live="polite"></p>
   </section>
+
+  <!-- 카드 한 장의 내용 (앞·뒤 카드가 같이 쓴다) -->
+  <template id="tpl-body">
+    <div class="pbody">
+      <figure class="photo" data-theme="light"><div class="pic"><img alt="" referrerpolicy="no-referrer" decoding="async"></div><span class="seq"></span></figure>
+      <div class="info">
+        <div class="tags">
+          <span class="tp-badge tp-badge--collab" style="--n:0" hidden>COLLAB</span>
+          <span class="tp-badge tp-badge--new" style="--n:1" hidden>NEW</span>
+        </div>
+        <p class="mall"></p>
+        <h2 class="brand"></h2>
+        <p class="p-title"></p>
+        <p class="price figure"></p>
+      </div>
+    </div>
+  </template>
 
   <!-- 3. 찜 목록 -->
   <dialog class="sheet" id="likes" aria-labelledby="likes-title">
     <div class="sheet__grip"></div>
     <div class="sheet__head">
       <h2 class="sheet-title" id="likes-title">찜한 상품 <span class="num" id="likes-total"></span></h2>
-      <button class="icon-btn" id="close-likes" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button class="icon-btn" id="close-likes" type="button" aria-label="닫기"><svg class="ico" data-i="close" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#close"/></svg></button>
     </div>
     <div class="sheet__body">
       <div class="filter-rows">
@@ -152,7 +216,12 @@
         <div class="filters sub" id="like-subs" role="tablist" aria-label="세부 분류" hidden></div>
       </div>
       <div id="like-list"></div>
-      <p class="empty-note" id="likes-empty">아직 찜한 상품이 없어요. ♥를 눌러 모아 보세요.</p>
+      <div class="state" id="likes-empty">
+        <picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/empty-wishlist-dark.svg"><img class="state__art" src="brand/states/empty-wishlist-light.svg" alt="" width="160" height="160"></picture>
+        <h3 class="state__t" data-copy="emptyLikesTitle"></h3>
+        <p class="state__b" data-copy="emptyLikesBody"></p>
+        <div class="state__btns state__btns--auto"><button class="btn btn--lg state__btn" id="empty-go" type="button" data-copy="emptyLikesCta"></button></div>
+      </div>
     </div>
   </dialog>
 
@@ -161,15 +230,15 @@
     <div class="sheet__grip"></div>
     <div class="sheet__head">
       <h2 class="sheet-title" id="auth-title">로그인</h2>
-      <button class="icon-btn" id="close-auth" type="button" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button class="icon-btn" id="close-auth" type="button" aria-label="닫기"><svg class="ico" data-i="close" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#close"/></svg></button>
     </div>
     <div class="sheet__body">
       <div id="auth-guest">
         <p class="auth-reason" id="auth-reason"></p>
         <ul class="perks">
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg>찜한 상품 저장, 어느 기기에서나 보기</li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4M7 14l3.5 6.2a1.6 1.6 0 0 0 3-.8V15h4.6a2 2 0 0 0 2-2.3l-1.2-7A2 2 0 0 0 16.9 4H7M7 14H4V4h3"/></svg>싫어요 누른 스타일은 덜 보여 주기</li>
-          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9Z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8Z"/></svg>반응을 학습해 내 취향대로 추천</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg>찜한 상품 저장, 어느 기기에서나 보기</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#thumbs-down"/></svg>싫어요 누른 스타일은 덜 보여 주기</li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#sparkle"/></svg>반응을 학습해 내 취향대로 추천</li>
         </ul>
         <div class="seg seg--full auth-tabs" role="tablist" aria-label="로그인 또는 회원가입">
           <button class="seg__btn" type="button" role="tab" data-mode="login" aria-selected="true" aria-pressed="true">로그인</button>
@@ -189,7 +258,7 @@
       <div id="auth-user" hidden>
         <div class="me-card">
           <span class="avatar lg" id="me-initial"></span>
-          <div><b id="me-email"></b><span class="chip chip--brand role-badge" id="me-admin" hidden>관리자</span><p id="me-keep"></p></div>
+          <div><b id="me-email"></b><span class="tp-badge tp-badge--admin role-badge" id="me-admin" hidden>관리자</span><p id="me-keep"></p></div>
         </div>
         <div class="me-stats">
           <div class="stat"><span class="stat__value" id="me-likes">0</span><span class="stat__label">찜</span></div>

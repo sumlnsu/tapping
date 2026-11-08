@@ -9,4 +9,4 @@
 - 상품 데이터는 매일 자동으로 갱신됩니다 (`feed.js`)
 - 상품 이미지·가격·링크의 권리는 각 브랜드와 판매처에 있으며, 구매는 각 판매처에서 이루어집니다
 
-파일: `index.html` 화면 · `app.js` 피드·추천 · `account.js` 로그인·동기화 · `config.js` Supabase 주소/공개 키 · `feed.js` 상품 데이터 · `style.css` 배치 · `tokens.css`·`components.css` SUMIN Design System 2.0 사본(볼트 팔레트)
+파일: `index.html` 화면 · `app.js` 피드·추천·Peel 전환 · `account.js` 로그인·동기화 · `copy.js` 화면 문구(임시 문구는 여기만 수정) · `config.js` Supabase 주소/공개 키 · `feed.js` 상품 데이터 · `style.css` 배치 · `tokens.css`·`components.css` SUMIN Design System 2.0 사본(볼트 팔레트 + 태핑 브랜드 키트) · `brand/` 로고·아이콘·빈 화면 그림

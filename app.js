@@ -1,4 +1,4 @@
-/* 태핑 v0.5 — 원탭 패션 큐레이션
+/* 태핑 v0.7 — 원탭 패션 큐레이션 (브랜드 키트 적용: projects/태핑/design/design_handoff_tapping_brand/README.md)
    · 모바일: 빈 곳을 탭하면 다음 / PC(1024px~): 사진을 클릭하면 다음 + 단축키
    · 비로그인: 넘겨 보기 + 구매 링크 (취향 학습 없음) / 로그인: 찜·싫어요·반응 학습 맞춤 추천 (account.js)
    · 추천 점수에 신상품(발매일·처음 본 날)과 콜라보 가산점 */
@@ -11,6 +11,10 @@
   const acct = window.TP_ACCOUNT;
   const isPC = () => matchMedia('(min-width: 1024px)').matches;
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const COPY = window.TAPPING_COPY;
+  const ICON = 'brand/icons/sprite.svg#';
+  document.querySelectorAll('[data-copy]').forEach(el => { el.textContent = COPY[el.dataset.copy]; });
 
   // feed.js v2(압축) → 앱에서 쓰는 객체. v1(객체 배열)도 그대로 받음
   function expandFeed(raw) {
@@ -95,7 +99,14 @@
   let likes = [], events = [];
   let pendingAct = null;                   // 비로그인 때 누른 ❤️/👎 → 로그인 직후 이어서 실행
   const shownLog = [];                     // 이번에 보여 준 상품 기록 (최근 30장: 브랜드·몰·세부 분류 다양성용)
-  let current = null, nextItem = null, shownAt = 0, busy = false;
+  let current = null, nextItem = null, shownAt = 0;
+  let phase = 'idle';                      // Peel 전환: idle → peel(0~140ms) → exit(~620ms) → reset(1프레임) → idle
+  let peelGen = 0;                         // 전환 도중 설정을 바꿨을 때 남은 타이머를 무시하기 위한 번호
+  let shownCount = 0, poolTotal = 0;       // 카드 왼쪽 위 순번 (이번에 본 장수 / 조건에 맞는 상품 수)
+  const makeBody = () => $('tpl-body').content.firstElementChild.cloneNode(true);
+  let bodyFront = makeBody(), bodyBack = makeBody();   // 카드 내용: 전환이 끝나면 앞뒤를 맞바꿔 이미지를 다시 받지 않는다
+  $('shell-front').prepend(bodyFront);
+  $('shell-back').append(bodyBack);
 
   const priceBucket = p => (p < 100000 ? 0 : p < 300000 ? 1 : p < 700000 ? 2 : 3);
   const won = (p, est) => (est ? '약 ' : '') + '₩' + Math.round(p).toLocaleString('ko-KR');
@@ -116,13 +127,7 @@
   // 찜한 상품·싫어요 누른 상품·이미 본 상품은 다시 보여 주지 않는다 (찜은 찜 목록에서 보기)
   function pool() {
     const liked = new Set(likes);
-    let list = FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem);
-    if (!list.length) {                       // 한 바퀴 다 봤으면 본 기록만 초기화 (찜·싫어요는 계속 제외)
-      seen.clear();
-      toast('조건에 맞는 상품을 한 바퀴 다 봤어요');
-      list = FEED.filter(f => matches(f, settings) && !disliked.has(f.id) && !liked.has(f.id) && f !== current);
-    }
-    return list;
+    return FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem);
   }
 
   // ---------- 다양성: 같은 브랜드·몰·세부 분류가 연달아 나오지 않게 ----------
@@ -218,66 +223,106 @@
     acct.saveState({ likes, disliked: [...disliked].slice(-5000), profile, settings });
   }
 
-  // ---------- 화면 ----------
-  function render(f) {
+  // ---------- 화면: 카드 2장 (뒤 카드에 다음 상품을 항상 미리 깔아 둔다) ----------
+  function fillInfo(root, f) {
+    const q = s => root.querySelector(s);
+    q('.brand').textContent = f.b;
+    q('.p-title').textContent = f.t;
+    q('.p-title').title = f.t;
+    q('.price').textContent = won(f.p, f.e);
+    q('.mall').textContent = f.m;
+    q('.tp-badge--collab').hidden = !f.x;
+    q('.tp-badge--new').hidden = !isNew(f);
+  }
+  function fillBody(body, f) {
+    const img = body.querySelector('img'), photo = body.querySelector('.photo');
+    body._f = f;
+    img.src = f.im;
+    img.alt = `${f.b} ${f.t}`;
+    layoutPhoto(photo, img, f, FILL.feed);               // 누끼면 크기 통일, 아니면 사진 배경색에 칸을 맞춤
+    preloadMask(f, () => { if (body._f === f) layoutPhoto(photo, img, f, FILL.feed); });
+    fillInfo(body, f);
+  }
+  function playBadges(root) { const t = root.querySelector('.tags'); t.classList.remove('play'); void t.offsetWidth; t.classList.add('play'); }
+
+  // f를 맨 앞 카드로 (filled: 뒤 카드였던 내용이 이미 채워져 있음)
+  function show(f, filled) {
     current = f;
     shownAt = Date.now();
-    if (!f) {
-      $('brand').textContent = '보여 드릴 상품이 없어요'; $('title').textContent = '설정에서 조건을 넓혀 보세요';
-      $('price').textContent = ''; $('mall').textContent = ''; $('photo').removeAttribute('src');
-      $('collab').hidden = true; $('new').hidden = true;
-      return;
-    }
     seen.add(f.id);
     store.set('seen', [...seen].slice(-4000));
     shownLog.push({ b: f.b, m: f.m, s: f.s, c: f.c });
     if (shownLog.length > 30) shownLog.shift();
-    $('photo').src = f.im;
-    $('photo').alt = `${f.b} ${f.t}`;
-    layoutPhoto($('card'), $('photo'), f, FILL.feed);  // 누끼면 크기 통일, 아니면 사진 배경색에 칸을 맞춤
-    preloadMask(f, () => { if (current === f) layoutPhoto($('card'), $('photo'), f, FILL.feed); });
-    $('brand').textContent = f.b;
-    $('title').textContent = f.t;
-    $('title').title = f.t;
-    $('price').textContent = won(f.p, f.e);
-    $('mall').textContent = f.m;
-    $('collab').hidden = !f.x;
-    $('new').hidden = !isNew(f);
+    if (!filled) fillBody(bodyFront, f);
+    shownCount++;
+    bodyFront.querySelector('.seq').textContent = `${String(shownCount).padStart(2, '0')} / ${poolTotal < 10 ? '0' + poolTotal : poolTotal.toLocaleString()}`;
+    fillInfo($('d-info'), f);
+    playBadges(bodyFront);
+    playBadges($('d-info'));
+    $('sr-now').textContent = `${f.b} ${f.t} ${won(f.p, f.e)}`;
     setLikeBtn(likes.includes(f.id));
-    // 다음 상품 미리 받아 두기
     nextItem = pick();
-    if (nextItem) { const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = nextItem.im; preloadMask(nextItem); }
+    $('shell-back').hidden = !nextItem;
+    if (nextItem) fillBody(bodyBack, nextItem);
   }
-
-  function advance(leaveClass) {
-    if (busy) return;
-    busy = true;
-    const v = $('viewer');
-    v.classList.add(leaveClass);
+  function setAllSeen(on) {
+    $('viewer').classList.toggle('is-empty', on);
+    $('allseen').hidden = !on;
+    if (on) current = null;
+  }
+  // 덱을 처음부터: 상품이 하나도 없으면 '한 바퀴 다 봄' 화면
+  function startDeck() {
+    peelGen++;
+    setPhase('idle');
+    current = null;
+    nextItem = null;
+    const f = pick();
+    setAllSeen(!f);
+    if (f) show(f);
+  }
+  function setPhase(p) { phase = p; $('viewer').dataset.phase = p; }
+  function swapToNext() {
+    if (!nextItem) return setAllSeen(true);
+    const front = bodyBack, back = bodyFront;
+    $('shell-front').prepend(front);
+    $('shell-back').append(back);
+    bodyFront = front;
+    bodyBack = back;
+    show(nextItem, true);
+  }
+  // Peel 전환 (5-1): 모서리 접힘 140ms → 위로 빠짐 260ms, 뒤 카드 올라옴 380ms → 620ms에 앞뒤 교체. 전환 중 탭은 무시
+  function peel() {
+    if (phase !== 'idle' || !current) return;
+    if (reduceMotion.matches) return swapToNext();
+    const gen = ++peelGen;
+    setPhase('peel');
+    setTimeout(() => { if (gen === peelGen) setPhase('exit'); }, 140);
     setTimeout(() => {
-      const f = nextItem && !seen.has(nextItem.id) ? nextItem : pick();
-      v.classList.remove(leaveClass);
-      v.classList.add('enter');
-      render(f);
-      void v.offsetWidth;               // 다시 그리기 강제 → 등장 애니메이션
-      v.classList.remove('enter');
-      busy = false;
-    }, 170);
+      if (gen !== peelGen) return;
+      setPhase('reset');
+      swapToNext();
+      void $('viewer').offsetWidth;       // 전환 없이 원위치한 상태를 확정한 뒤 idle로 (다음 프레임을 기다리지 않음)
+      setPhase('idle');
+    }, 620);
   }
 
   // ---------- 행동 ----------
+  const ready = () => !!current && phase === 'idle';
   const dwell = () => Date.now() - shownAt;
   function onSkip() {
-    if (!current) return;
+    if (!ready()) return;
     hideCoach();
     if (me) record(current, 'skip', -0.15, dwell()); else maybeNudge();
-    advance('leave-next');
+    peel();
   }
   // 찜은 하트만 켜고 끄며 다음 상품으로 넘어가지 않는다 (넘기기는 화면 탭·클릭으로만)
+  let likeTimer;
   function onLike() {
-    if (!current) return;
+    if (!ready()) return;
     if (!me) return askLogin('like');
-    pop('btn-like');
+    $('btn-like').classList.add('pop');                  // 아이콘 1.16배 튕김, 170ms 뒤 복귀 (5-3)
+    clearTimeout(likeTimer);
+    likeTimer = setTimeout(() => $('btn-like').classList.remove('pop'), 170);
     const f = current, liked = likes.includes(f.id);
     if (liked) likes = likes.filter(id => id !== f.id); else likes.unshift(f.id);
     record(f, liked ? 'unlike' : 'like', liked ? -1 : 1, dwell());   // 찜 취소 시 학습도 되돌림
@@ -287,24 +332,27 @@
     setLikeBtn(!liked);
   }
   function onDislike() {
-    if (!current) return;
+    if (!ready()) return;
     if (!me) return askLogin('dislike');
-    pop('btn-dislike');
     disliked.add(current.id);
     record(current, 'dislike', -1, dwell());
-    advance('leave-dislike');
+    peel();
   }
+  let buyTimer;
   function onBuy() {
-    if (!current) return;
-    pop('btn-buy');
+    if (!ready()) return;
     record(current, 'buy', 2, dwell());
-    window.open(current.u, '_blank', 'noopener');
-    toast(`${current.m}(으)로 이동했어요`);
+    const t = $('buy-toast');
+    t.hidden = false;
+    clearTimeout(buyTimer);
+    buyTimer = setTimeout(() => { t.hidden = true; }, 1400);
+    window.open(current.u, '_blank', 'noopener');        // 팝업 차단을 피하려고 탭 이벤트 안에서 바로 연다
   }
   function setLikeBtn(on) {
     const b = $('btn-like');
     b.setAttribute('aria-pressed', String(on));
     b.querySelector('.act__label').textContent = on ? '찜했어요' : '찜하기';
+    b.querySelector('use').setAttribute('href', ICON + (on ? 'heart-filled' : 'heart'));
   }
 
   // 비로그인으로 15장쯤 넘기면 한 번만 로그인 안내
@@ -432,16 +480,16 @@
     $('onboard').classList.remove('is-edit');
     $('onboard').hidden = true;
     $('feed').hidden = false;
-    $('stage').focus({ preventScroll: true });
   }
   $('ob-back').addEventListener('click', () => { dropLayer('settings'); backToFeed(); });
 
   function showFeed() {
     $('onboard').hidden = true;
     $('feed').hidden = false;
-    nextItem = null;
-    render(pick());
-    $('stage').focus({ preventScroll: true });
+    placeActions();
+    poolTotal = FEED.filter(f => matches(f, settings)).length;
+    shownCount = 0;
+    startDeck();
     $('coach').textContent = finePointer ? '사진을 클릭하면 다음 상품' : '빈 곳을 탭하면 다음 상품';
     if (store.get('coachDone', false)) hideCoach(); else setTimeout(hideCoach, 3500);
   }
@@ -510,7 +558,7 @@
   function likeCard(f) {
     const a = document.createElement('a');
     a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = '<div class="ph" data-theme="light"><div class="pic"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
+    a.innerHTML = `<div class="ph" data-theme="light"><div class="pic"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><div class="tile-tags">${f.x ? '<span class="tp-badge tp-badge--sm tp-badge--collab">COLLAB</span>' : ''}${isNew(f) ? '<span class="tp-badge tp-badge--sm tp-badge--new">NEW</span>' : ''}</div><button type="button" class="unlike" aria-label="찜 빼기"><svg class="ico" data-i="heart-filled" viewBox="0 0 24 24" aria-hidden="true"><use href="${ICON}heart-filled"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>`;
     a.querySelector('img').src = f.im;
     const ph = a.querySelector('.ph'), pimg = a.querySelector('img');
     layoutPhoto(ph, pimg, f, FILL.tile, 1);                       // 정사각형 칸
@@ -778,10 +826,13 @@
 
   // ---------- 보조 ----------
   function hideCoach() { $('coach').classList.add('hide'); store.set('coachDone', true); }
-  function pop(id) { const b = $(id); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  // 반응 버튼 자리: 모바일은 카드 안(카드와 함께 넘어감), PC는 오른쪽 정보 칸
+  function placeActions() {
+    if (isPC()) $('actions-slot').append($('actions'));
+    else $('shell-front').insertBefore($('actions'), $('shell-front').querySelector('.peel'));
+  }
   let toastTimer;
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('is-on'), 2200); }
-  const rand = a => (a && a.length ? a[Math.floor(Math.random() * a.length)] : null);
   const count = (a, v) => a.filter(x => x === v).length;
   function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
   // 가중치에 비례해 하나 고르기 (신상품·콜라보일수록 잘 뽑힘)
@@ -795,10 +846,12 @@
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
   // ---------- 이벤트 연결 ----------
-  $('stage').addEventListener('click', onSkip);
-  // 모바일: 사진 아래 정보 칸의 빈 곳을 눌러도 다음 (버튼은 제외). PC는 사진 클릭만
-  $('detail').addEventListener('click', e => { if (!isPC() && !e.target.closest('button, a')) onSkip(); });
+  let suppressClick = false;               // 당기기 직후의 클릭은 '다음'으로 치지 않음
+  $('stage').addEventListener('click', () => { if (suppressClick) { suppressClick = false; return; } onSkip(); });
   $('btn-next').addEventListener('click', onSkip);
+  $('reshuffle').addEventListener('click', () => { seen.clear(); store.set('seen', []); shownCount = 0; startDeck(); });
+  $('see-likes').addEventListener('click', openLikes);
+  $('empty-go').addEventListener('click', () => closeSheet('likes'));
   $('btn-like').addEventListener('click', onLike);
   $('btn-dislike').addEventListener('click', onDislike);
   $('btn-buy').addEventListener('click', onBuy);
@@ -811,7 +864,92 @@
   document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => b.addEventListener('click', () => setAuthMode(b.dataset.mode)));
   $('nudge-login').addEventListener('click', () => openAuth('nudge'));
   $('nudge-close').addEventListener('click', () => { $('nudge').hidden = true; });
-  $('photo').addEventListener('error', () => { if (current) { busy = false; advance('leave-next'); } });
+  // 사진을 못 불러오면 그 상품은 건너뛴다 (error는 버블링되지 않아 capture로 받음)
+  $('deck').addEventListener('error', e => {
+    if (e.target.tagName !== 'IMG') return;
+    const body = e.target.closest('.pbody'), f = body && body._f;
+    if (!f) return;
+    seen.add(f.id);
+    if (body === bodyBack && nextItem === f) {
+      nextItem = pick();
+      $('shell-back').hidden = !nextItem;
+      if (nextItem) fillBody(bodyBack, nextItem);
+    } else if (body === bodyFront && current === f && phase === 'idle') {
+      shownCount--;
+      peel();
+    }
+  }, true);
+
+  // 아이콘 반응 (5-3): 누를 때 1회. 찜 버튼은 자체 튕김을 쓴다
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    const ic = b && b.id !== 'btn-like' && b.querySelector('svg.ico');
+    if (!ic) return;
+    ic.classList.remove('play');
+    void ic.getBoundingClientRect();
+    ic.classList.add('play');
+  }, true);
+  document.addEventListener('animationend', e => { if (e.target.classList && e.target.classList.contains('ico')) e.target.classList.remove('play'); }, true);
+
+  // 기울기 깊이 (5-2): 마우스 위치에 따라 카드는 기울고 사진은 반대로 살짝 움직인다
+  if (finePointer && !reduceMotion.matches) {
+    const deck = $('deck'), viewer = $('viewer');
+    const tilt = (x, y) => { viewer.style.setProperty('--tx', x.toFixed(3)); viewer.style.setProperty('--ty', y.toFixed(3)); };
+    deck.addEventListener('pointermove', e => {
+      const r = deck.getBoundingClientRect();
+      tilt((e.clientX - r.left) / r.width * 2 - 1, (e.clientY - r.top) / r.height * 2 - 1);
+    });
+    deck.addEventListener('pointerleave', () => tilt(0, 0));
+  }
+
+  // 당겨서 새로 섞기 (5-5, 터치): 끌어내리는 만큼 로고 모서리가 접히고, 끝까지 당겼다 놓으면 새 상품으로
+  const PULL = { id: null, y0: 0, v: 0, dragging: false, busy: false };
+  function setPull(v) {
+    PULL.v = v;
+    $('viewer').style.setProperty('--pull', v.toFixed(3));
+    $('pull-label').textContent = PULL.busy ? COPY.pullBusy : v >= 1 ? COPY.pullRelease : COPY.pullMore;
+  }
+  function refreshPull() {
+    PULL.busy = true;
+    setPull(1);
+    const reduce = reduceMotion.matches, flap = $('pull-flap');
+    if (!reduce && flap.animate) flap.animate([
+      { transform: 'scale(1)', easing: 'cubic-bezier(.55,0,.8,.2)' },
+      { transform: 'scale(0)', offset: .45 },
+      { transform: 'scale(0)', offset: .55, easing: 'cubic-bezier(.16,1,.3,1)' },
+      { transform: 'scale(1)' }
+    ], { duration: 900, iterations: 2 });
+    setTimeout(() => { PULL.busy = false; setPull(0); startDeck(); }, reduce ? 0 : 1800);
+  }
+  const stage = $('stage');
+  stage.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' || phase !== 'idle' || PULL.busy || !current) return;
+    PULL.id = e.pointerId; PULL.y0 = e.clientY; PULL.dragging = false;
+  });
+  stage.addEventListener('pointermove', e => {
+    if (e.pointerId !== PULL.id) return;
+    const d = e.clientY - PULL.y0;
+    if (!PULL.dragging) {
+      if (d < 10) return;
+      PULL.dragging = true;
+      try { stage.setPointerCapture(e.pointerId); } catch { /* 이미 끝난 포인터 */ }
+      $('viewer').setAttribute('data-drag', '');
+    }
+    setPull(Math.min(1.2, Math.max(0, d) / 140));
+  });
+  const endPull = e => {
+    if (e.pointerId !== PULL.id) return;
+    PULL.id = null;
+    if (!PULL.dragging) return;
+    PULL.dragging = false;
+    $('viewer').removeAttribute('data-drag');
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 60);
+    if (PULL.v >= 1) refreshPull(); else setPull(0);
+  };
+  stage.addEventListener('pointerup', endPull);
+  stage.addEventListener('pointercancel', endPull);
+
   $('stage').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onSkip(); } });
   document.addEventListener('keydown', e => {
     if ($('auth').open || $('likes').open) return;                        // 시트가 열려 있으면 Esc는 시트가 처리
@@ -822,10 +960,15 @@
     else if (e.key.toLowerCase() === 'd') onDislike();
     else if (e.key.toLowerCase() === 'b') onBuy();
   });
-  matchMedia('(min-width: 1024px)').addEventListener('change', () => { if (!$('onboard').hidden) renderArt(); });
-  // 창 크기가 바뀌면 사진 칸 비율이 달라지므로 다시 맞춤
+  matchMedia('(min-width: 1024px)').addEventListener('change', () => { placeActions(); if (!$('onboard').hidden) renderArt(); });
+  // 창 크기가 바뀌면 사진 칸 비율이 달라지므로 앞뒤 카드를 다시 맞춤
   let resizeTimer;
-  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (current) layoutPhoto($('card'), $('photo'), current, FILL.feed); }, 120); });
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed);
+    }, 120);
+  });
 
   // ---------- 시작: 자동 로그인 확인 → 화면 ----------
   async function boot() {
