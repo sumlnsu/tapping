@@ -256,9 +256,7 @@
     if (!filled) fillBody(bodyFront, f);
     shownCount++;
     bodyFront.querySelector('.seq').textContent = `${String(shownCount).padStart(2, '0')} / ${poolTotal < 10 ? '0' + poolTotal : poolTotal.toLocaleString()}`;
-    fillInfo($('d-info'), f);
     playBadges(bodyFront);
-    playBadges($('d-info'));
     $('sr-now').textContent = `${f.b} ${f.t} ${won(f.p, f.e)}`;
     setLikeBtn(likes.includes(f.id));
     nextItem = pick();
@@ -351,7 +349,6 @@
   function setLikeBtn(on) {
     const b = $('btn-like');
     b.setAttribute('aria-pressed', String(on));
-    b.querySelector('.act__label').textContent = on ? '찜했어요' : '찜하기';
     b.querySelector('use').setAttribute('href', ICON + (on ? 'heart-filled' : 'heart'));
   }
 
@@ -486,7 +483,6 @@
   function showFeed() {
     $('onboard').hidden = true;
     $('feed').hidden = false;
-    placeActions();
     poolTotal = FEED.filter(f => matches(f, settings)).length;
     shownCount = 0;
     startDeck();
@@ -826,11 +822,6 @@
 
   // ---------- 보조 ----------
   function hideCoach() { $('coach').classList.add('hide'); store.set('coachDone', true); }
-  // 반응 버튼 자리: 모바일은 카드 안(카드와 함께 넘어감), PC는 오른쪽 정보 칸
-  function placeActions() {
-    if (isPC()) $('actions-slot').append($('actions'));
-    else $('shell-front').insertBefore($('actions'), $('shell-front').querySelector('.peel'));
-  }
   let toastTimer;
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('is-on'), 2200); }
   const count = (a, v) => a.filter(x => x === v).length;
@@ -848,7 +839,6 @@
   // ---------- 이벤트 연결 ----------
   let suppressClick = false;               // 당기기 직후의 클릭은 '다음'으로 치지 않음
   $('stage').addEventListener('click', () => { if (suppressClick) { suppressClick = false; return; } onSkip(); });
-  $('btn-next').addEventListener('click', onSkip);
   $('reshuffle').addEventListener('click', () => { seen.clear(); store.set('seen', []); shownCount = 0; startDeck(); });
   $('see-likes').addEventListener('click', openLikes);
   $('empty-go').addEventListener('click', () => closeSheet('likes'));
@@ -891,16 +881,59 @@
   }, true);
   document.addEventListener('animationend', e => { if (e.target.classList && e.target.classList.contains('ico')) e.target.classList.remove('play'); }, true);
 
-  // 기울기 깊이 (5-2): 마우스 위치에 따라 카드는 기울고 사진은 반대로 살짝 움직인다
-  if (finePointer && !reduceMotion.matches) {
-    const deck = $('deck'), viewer = $('viewer');
-    const tilt = (x, y) => { viewer.style.setProperty('--tx', x.toFixed(3)); viewer.style.setProperty('--ty', y.toFixed(3)); };
-    deck.addEventListener('pointermove', e => {
-      const r = deck.getBoundingClientRect();
+  // 기울기 깊이 (5-2): 카드는 기울고 사진은 반대로, 시작 화면 아이콘은 세 겹이 서로 다른 깊이로 움직인다
+  const setPair = (el, a, b, x, y) => { el.style.setProperty(a, x.toFixed(3)); el.style.setProperty(b, y.toFixed(3)); };
+  const tiltCard = (x, y) => setPair($('viewer'), '--tx', '--ty', x, y);
+  const tiltTile = (x, y) => setPair($('ob-tile'), '--dx', '--dy', x, y);
+  const followPointer = (area, tilt) => {
+    area.addEventListener('pointermove', e => {
+      const r = area.getBoundingClientRect();
       tilt((e.clientX - r.left) / r.width * 2 - 1, (e.clientY - r.top) / r.height * 2 - 1);
     });
-    deck.addEventListener('pointerleave', () => tilt(0, 0));
+    area.addEventListener('pointerleave', () => tilt(0, 0));
+  };
+  if (finePointer && !reduceMotion.matches) { followPointer($('deck'), tiltCard); followPointer($('onboard'), tiltTile); }
+
+  // 휴대폰은 자이로로: 아이폰은 '시작하기'(재방문이면 첫 탭)에서 허용을 물어보고, 거절하면 다시 묻지 않는다
+  const gyro = { on: false, g0: null, b0: null, x: 0, y: 0, raf: 0 };
+  const unit = v => Math.max(-1, Math.min(1, v));
+  function onOrient(e) {
+    if (e.gamma === null || e.beta === null) return;
+    if (gyro.g0 === null) { gyro.g0 = e.gamma; gyro.b0 = e.beta; }
+    gyro.g0 += (e.gamma - gyro.g0) * .02;     // 기준 자세가 천천히 따라와서 어떤 자세로 들어도 가운데로 돌아온다
+    gyro.b0 += (e.beta - gyro.b0) * .02;
+    gyro.x = unit((e.gamma - gyro.g0) / 16);
+    gyro.y = unit((e.beta - gyro.b0) / 16);
+    if (!gyro.raf) gyro.raf = requestAnimationFrame(() => { gyro.raf = 0; tiltCard(gyro.x, gyro.y); tiltTile(gyro.x, gyro.y); });
   }
+  function startGyro() {
+    const D = window.DeviceOrientationEvent;
+    if (gyro.on || !D || finePointer || reduceMotion.matches || store.get('gyroDenied', false)) return;
+    const listen = () => { gyro.on = true; window.addEventListener('deviceorientation', onOrient); };
+    if (typeof D.requestPermission !== 'function') return listen();
+    D.requestPermission().then(s => { if (s === 'granted') listen(); else store.set('gyroDenied', true); }).catch(() => { /* 사용자 동작 밖에서 호출된 경우 */ });
+  }
+  if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') startGyro();
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#start, #stage')) startGyro(); }, true);
+
+  // 빈 화면 그림 (5-6): 파일을 그대로 쓰되 접힌 모서리만 따로 움직이도록 문서 안에 펼친다 (실패하면 <img> 그대로)
+  const darkScheme = matchMedia('(prefers-color-scheme: dark)');
+  function inlineStateArt() {
+    const theme = document.documentElement.dataset.theme || (darkScheme.matches ? 'dark' : 'light');
+    document.querySelectorAll('[data-art]').forEach(async box => {
+      try {
+        const res = await fetch(`brand/states/${box.dataset.art}-${theme}.svg`);
+        if (!res.ok) return;
+        const svg = new DOMParser().parseFromString(await res.text(), 'image/svg+xml').documentElement;
+        if (svg.nodeName !== 'svg') return;
+        svg.querySelectorAll('metadata').forEach(m => m.remove());
+        svg.querySelector('path[d^="M128 112"]')?.classList.add('state__flap');
+        box.replaceChildren(document.importNode(svg, true));
+      } catch { /* 네트워크 오류면 파일 그림 그대로 */ }
+    });
+  }
+  darkScheme.addEventListener('change', inlineStateArt);
+  inlineStateArt();
 
   // 당겨서 새로 섞기 (5-5, 터치): 끌어내리는 만큼 로고 모서리가 접히고, 끝까지 당겼다 놓으면 새 상품으로
   const PULL = { id: null, y0: 0, v: 0, dragging: false, busy: false };
@@ -960,7 +993,7 @@
     else if (e.key.toLowerCase() === 'd') onDislike();
     else if (e.key.toLowerCase() === 'b') onBuy();
   });
-  matchMedia('(min-width: 1024px)').addEventListener('change', () => { placeActions(); if (!$('onboard').hidden) renderArt(); });
+  matchMedia('(min-width: 1024px)').addEventListener('change', () => { if (!$('onboard').hidden) renderArt(); });
   // 창 크기가 바뀌면 사진 칸 비율이 달라지므로 앞뒤 카드를 다시 맞춤
   let resizeTimer;
   window.addEventListener('resize', () => {

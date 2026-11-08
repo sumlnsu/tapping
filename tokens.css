@@ -221,6 +221,17 @@
   --tp-state-btn: light-dark(#ffffff, #1c1c1c);    /* 빈 화면 보조 버튼 */
   --tp-state-art: 160px;   --tp-state-text: 270px;   --tp-state-btn-w: 220px;
 
+  --tp-photo-h: 440px;     /* 카드 사진 칸 */
+  --tp-shadow-buy: 0 2px 10px rgb(10 10 10 / .08);   /* 구매 버튼 */
+  --tp-state-btn-c: light-dark(rgb(10 10 10 / .06), transparent);
+  --tp-shadow-state-btn: 0 1px 2px var(--tp-state-btn-c), 0 2px 10px var(--tp-state-btn-c);
+  --tp-card-pc-h: 720px;   --tp-card-pc-info: 480px;   --tp-card-pc-info-min: 360px;   /* PC 카드: 최대 높이 · 정보 칸 최대/최소 폭 */
+
+  /* 앱 아이콘 깊이 연출 (시작 화면) */
+  --tp-tile: clamp(88px, 12vw, 148px);
+  --tp-dur-tile: 220ms;
+  --tp-shadow-tile: 0 18px 40px rgb(10 10 10 / .14);
+  --tp-tile-flap-shadow: rgb(10 10 10 / .28);
   /* Peel 전환 (약 620ms, 브랜드 시그니처로 승인된 예외) */
   --tp-peel: 104px;
   --tp-back-y: 18px;
@@ -232,7 +243,7 @@
   --ease-icon: cubic-bezier(.33, 1, .68, 1);
 }
 @media (prefers-reduced-motion: reduce) {
-  :root { --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; }
+  :root { --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; }
 }
 
 /* ---------- 5. v1.0 이름 호환 (기존 화면이 깨지지 않게) ---------- */

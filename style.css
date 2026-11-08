@@ -1,12 +1,12 @@
 /* 태핑 v0.7 · SUMIN Design System 2.0 · 볼트 팔레트 + 태핑 브랜드 키트 (design/design_handoff_tapping_brand/README.md)
    색·크기 값은 tokens.css 변수만 쓴다. 이 파일에는 배치(레이아웃)만 있다.
-   모바일(~1023px): 카드 2장(앞·뒤) + 카드 안 오른쪽 아래 버튼 3개 / PC(1024px~): 큰 사진 + 오른쪽 정보 칸, 클릭으로 넘김 */
+   모바일(~1023px): 카드 2장(앞·뒤) + 카드 안 오른쪽 아래 버튼 3개 / PC(1024px~): 같은 카드를 가로로, 클릭으로 넘김 */
 :root {
   --act: calc(var(--h-lg) + var(--s-1));        /* 반응 버튼 지름 56 */
   --detail-w: calc(var(--s-9) * 4);            /* PC 정보 칸 폭 */
   --app-w: var(--w-sheet);                     /* 모바일·태블릿 최대 폭 */
   --bar-x: calc(var(--s-4) + var(--s-1));      /* 상단 바 좌우 20 */
-  --photo-h: 61.5%;                            /* 카드에서 사진 칸 비율 (402×874 화면에서 440px) */
+  --photo-h: min(var(--tp-photo-h), 61.5%);    /* 사진 칸 440, 화면이 낮으면 카드의 61.5%까지 줄어듦 */
 }
 
 html, body { height: 100%; }
@@ -56,11 +56,23 @@ button { cursor: pointer; }
 .ob-back svg { width: var(--s-5); height: var(--s-5); }
 .ob-edit-title { display: none; margin: 0; color: var(--c-ink); font: 750 var(--t-h2)/1.2 var(--f-sans); letter-spacing: -.02em; }
 .onboard.is-edit .ob-top { position: sticky; top: 0; z-index: 2; margin: calc(max(var(--s-6), env(safe-area-inset-top)) * -1) calc(var(--s-5) * -1) 0; padding: max(var(--s-3), env(safe-area-inset-top)) var(--s-5) var(--s-2); background: var(--c-glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
-.onboard.is-edit .ob-logo, .onboard.is-edit .ob-title, .onboard.is-edit .ob-head .lead { display: none; }
+.onboard.is-edit .ob-logo, .onboard.is-edit .ob-hero, .onboard.is-edit .ob-head .lead { display: none; }
 .onboard.is-edit .ob-edit-title { display: block; }
 .ob-title { font-size: clamp(2.25rem, 1.6rem + 3vw, var(--t-display)); }
 .ob-title mark { padding: 0 .1em; border-radius: var(--r-xs); background: var(--c-brand); color: var(--c-on-brand); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .ob-head .lead { margin-top: var(--s-3); color: var(--c-muted); }
+.ob-hero { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+.ob-hero .ob-title { min-width: 0; }
+
+/* 앱 아이콘 깊이 연출 (5-2): 원본 타일 180 기준 값(면 4 · 접힘 10)을 크기에 비례해 적용 */
+.tile { flex: none; width: var(--tp-tile); height: var(--tp-tile); perspective: 700px; }
+.tile__in { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(calc(var(--dy, 0) * -12deg)) rotateY(calc(var(--dx, 0) * 12deg)); transition: transform var(--tp-dur-tile) var(--ease-standard); }
+.tile__bg { position: absolute; inset: 0; border-radius: 22.37%; background: var(--c-brand); box-shadow: var(--tp-shadow-tile); }
+.tile svg { position: absolute; left: 24%; top: 24%; width: 52%; height: 52%; overflow: visible; stroke: none; transition: transform var(--tp-dur-tile) var(--ease-standard); }
+.tile__face { transform: translate(calc(var(--dx, 0) * var(--tp-tile) / 45), calc(var(--dy, 0) * var(--tp-tile) / 45)); }
+.tile__face path { fill: var(--c-on-brand); }
+.tile__flap { transform: translate(calc(var(--dx, 0) * var(--tp-tile) / 18), calc(var(--dy, 0) * var(--tp-tile) / 18)); filter: drop-shadow(calc((var(--dx, 0) * -4 - 2) * 1px) calc((var(--dy, 0) * -4 - 2) * 1px) 6px var(--tp-tile-flap-shadow)); }
+.tile__flap path { fill: var(--c-on-brand); stroke: var(--c-brand); stroke-width: 4; stroke-linejoin: round; }
 .q { margin: 0; padding: 0; border: 0; min-width: 0; }
 .q legend { margin-bottom: var(--s-3); padding: 0; color: var(--c-ink); font: 700 var(--t-body)/1.3 var(--f-sans); }
 .hint { margin-left: var(--s-1); color: var(--c-muted); font-size: var(--t-caption); font-weight: 500; }
@@ -97,7 +109,7 @@ button { cursor: pointer; }
 
 /* 카드 2장 (4-1): 뒤 카드는 다음 상품을 미리 깔아 둠. 아래 40px은 뒤 카드가 비치는 자리 */
 .viewer { position: relative; flex: 1; min-height: 0; margin: var(--s-3) var(--s-3) max(calc(var(--s-6) + var(--s-2)), calc(env(safe-area-inset-bottom) + var(--s-5))); }
-.viewer.is-empty .deck, .viewer.is-empty .detail, .viewer.is-empty .pull { display: none; }
+.viewer.is-empty .deck, .viewer.is-empty .pull { display: none; }
 .deck { position: absolute; inset: 0; transform: translateY(calc(var(--pull, 0) * 124px)); transition: transform 460ms var(--ease-out); }
 .pcard { position: absolute; inset: 0; overflow: hidden; border-radius: var(--r-xl); background: var(--c-surface); }
 .pbody { position: absolute; inset: 0; display: flex; flex-direction: column; }
@@ -111,25 +123,24 @@ button { cursor: pointer; }
 .pic { position: absolute; inset: calc(var(--s-5) + var(--s-1)); }
 .front .pic { transform: translate(calc(var(--tx, 0) * -6px), calc(var(--ty, 0) * -6px)); transition: transform var(--tp-dur-follow) var(--ease-standard); }   /* 사진은 카드와 반대로 (패럴랙스) */
 .photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.seq { position: absolute; left: var(--bar-x); top: calc(var(--s-4) + 2px); color: var(--c-muted); font: 700 var(--tp-t-micro)/1 var(--f-sans); letter-spacing: .1em; font-variant-numeric: tabular-nums; }
+.seq { position: absolute; left: var(--bar-x); top: calc(var(--s-4) + 2px); color: var(--c-muted); font: 700 var(--tp-t-micro)/normal var(--f-sans); letter-spacing: .1em; font-variant-numeric: tabular-nums; }
 .next-cue { display: none; }
 
 /* 누끼 모드 (app.js layoutPhoto): 판매처 원본 + 실루엣 마스크, 상품이 칸의 80%를 채우도록 위치·크기를 인라인으로 지정 */
 .is-cut, .ob-art figure.is-cut, .like-item .ph.is-cut { background: var(--c-surface-2); }   /* 흰 상품도 윤곽이 보이게 옅은 회색으로 통일 */
 .is-cut .pic { filter: drop-shadow(0 var(--s-2) var(--s-3) color-mix(in srgb, var(--c-depth) 12%, transparent)); }
 .is-cut img { position: absolute; max-width: none; object-fit: fill; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
-.coach { position: absolute; z-index: 2; left: 50%; top: 40%; margin: 0; padding: var(--s-2) var(--s-4); border-radius: var(--r-pill); background: var(--c-ink); color: var(--c-surface); font: 650 var(--t-label)/1.4 var(--f-sans); white-space: nowrap; pointer-events: none; transform: translate(-50%, -50%); transition: opacity var(--dur-4) var(--ease-standard); }
+.coach { position: absolute; z-index: 2; left: 50%; top: calc(var(--photo-h) - var(--h-md) - var(--s-4)); height: var(--h-md); margin: 0; padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--c-depth); color: var(--tp-on-ink); font: 600 var(--t-label)/var(--h-md) var(--f-sans); white-space: nowrap; pointer-events: none; translate: -50% 0; transition: opacity var(--dur-4) var(--ease-standard); }   /* 구매 토스트와 같은 모양, 상품을 가리지 않게 사진 칸 아래쪽 */
 .coach.hide { opacity: 0; }
 
 /* 카드 정보 (4-1): 큰 브랜드명, 자간을 넓힌 작은 대문자 라벨 */
 .info { display: flex; flex-direction: column; gap: 6px; }
 .pbody .info { flex: none; padding: var(--s-1) var(--s-9) var(--s-3) var(--s-5); }
 .tags { display: flex; gap: 6px; min-height: var(--tp-badge-h); }
-.mall { margin: 0; overflow: hidden; color: var(--c-muted); font: 700 var(--tp-t-micro)/1.3 var(--f-sans); letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.mall { margin: 0; overflow: hidden; color: var(--c-muted); font: 700 var(--tp-t-micro)/normal var(--f-sans); letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .brand { display: -webkit-box; margin: 0; overflow: hidden; color: var(--c-ink); font: 800 var(--tp-t-brand)/1.1 var(--f-sans); letter-spacing: var(--tp-tr-logo); -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.p-title { display: -webkit-box; margin: 0; overflow: hidden; color: var(--c-ink-2); font: 500 var(--tp-t-name)/1.4 var(--f-sans); -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.price { margin: 6px 0 0; color: var(--c-ink); font: 750 var(--tp-t-price)/1.1 var(--f-sans); letter-spacing: var(--tr-num); }
-.detail { display: none; }
+.p-title { display: -webkit-box; margin: 0; overflow: hidden; color: var(--c-ink-2); font: 500 var(--tp-t-name)/normal var(--f-sans); letter-spacing: 0; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.price { margin: 6px 0 0; color: var(--c-ink); font: 750 var(--tp-t-price)/normal var(--f-sans); letter-spacing: var(--tr-num); }
 
 /* 접힌 모서리 배지 (4-2) */
 .tp-badge { position: relative; display: inline-flex; align-items: center; height: var(--tp-badge-h); padding: 0 var(--tp-badge-pr) 0 var(--tp-badge-pl); border-radius: var(--tp-badge-r); background: var(--b); color: var(--f); font: 700 var(--tp-badge-t)/1 var(--f-sans); letter-spacing: .06em; white-space: nowrap; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tp-badge-fold)), calc(100% - var(--tp-badge-fold)) 100%, 0 100%); }
@@ -152,13 +163,11 @@ button { cursor: pointer; }
   transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2), transform var(--dur-3) var(--ease-spring);
 }
 .act:active { transform: scale(.965); transition-duration: var(--dur-1); }
-.act__label, .act .kbd { display: none; }
 .act.like { transition: transform var(--dur-3) var(--ease-spring); }   /* 찜 켜기·끄기: 바탕·아이콘은 즉시 교체 */
 .act.like[aria-pressed="true"] { background: var(--c-depth); color: var(--c-brand); }
 .act.like svg { transition: transform var(--dur-3) var(--ease-spring); }
 .act.like.pop svg { transform: scale(1.16); }
-.act.buy { background: var(--c-brand); color: var(--c-on-brand); box-shadow: inset 0 0 0 1px var(--tp-ring-buy), var(--tp-shadow-act); }
-.next-btn, .pc-hint { display: none; }
+.act.buy { background: var(--c-brand); color: var(--c-on-brand); box-shadow: inset 0 0 0 1px var(--tp-ring-buy), var(--tp-shadow-buy); }
 
 /* Peel 전환 (5-1): 카드 오른쪽 아래가 접히고 위로 빠지면서 뒤 카드가 올라온다 */
 .peel { position: absolute; z-index: 4; right: 0; bottom: 0; width: 0; height: 0; pointer-events: none; transition: width var(--tp-dur-peel-press) var(--ease-out), height var(--tp-dur-peel-press) var(--ease-out); }
@@ -225,14 +234,16 @@ button { cursor: pointer; }
 .state { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .state--deck { position: absolute; inset: 0; justify-content: center; }
 .sheet__body > .state { padding: var(--s-6) 0; }
-.state__art { display: block; width: var(--tp-state-art); height: var(--tp-state-art); animation: tp-state-in 420ms var(--ease-out) both; }
+.state__art { width: var(--tp-state-art); height: var(--tp-state-art); animation: tp-state-in 420ms var(--ease-out) both; }
+.state__art img, .state__art svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.state__flap { transform-box: view-box; transform-origin: 128px 140px; animation: tp-fold-in 320ms var(--ease-out) 260ms both; }   /* 그림이 올라온 뒤 모서리가 접힘 (5-6) */
 .state__t { margin: var(--s-5) 0 0; color: var(--c-ink); font: 800 var(--tp-t-state)/1.3 var(--f-sans); letter-spacing: -.03em; }
 .state__b { max-width: var(--tp-state-text); margin: var(--s-2) 0 0; color: var(--c-ink-2); font: 500 var(--t-body)/1.55 var(--f-sans); }
 .state__btns { display: flex; flex-direction: column; gap: 10px; width: var(--tp-state-btn-w); margin-top: var(--s-5); }
 .state__btns--auto { width: auto; }
 .state__btn { width: 100%; font-size: var(--t-body); font-weight: 700; }
 .state__btn svg { width: 20px; height: 20px; }
-.state__btn--2, .ds .state__btn--2:hover { background: var(--tp-state-btn); color: var(--c-ink); box-shadow: inset 0 0 0 1px var(--c-line); }
+.state__btn--2, .ds .state__btn--2:hover { background: var(--tp-state-btn); color: var(--c-ink); box-shadow: var(--tp-shadow-state-btn); }
 @keyframes tp-state-in { from { transform: translateY(var(--s-4)) scale(.94); opacity: 0; } }
 
 /* 비로그인 안내 띠 (한 세션에 한 번) */
@@ -246,7 +257,7 @@ button { cursor: pointer; }
 
 /* 동작 줄이기: 모든 전환은 즉시, 로딩은 접힌 로고 모양으로 멈춤 */
 @media (prefers-reduced-motion: reduce) {
-  .ld-c, .ld-f, .lg-b, .lg-f, .lg-l, .ico.play, .tags.play .tp-badge, .tags.play .tp-badge::after, .state__art, .buy-toast { animation: none !important; }
+  .ld-c, .ld-f, .lg-b, .lg-f, .lg-l, .ico.play, .tags.play .tp-badge, .tags.play .tp-badge::after, .state__art, .state__flap, .buy-toast { animation: none !important; }
 }
 
 /* ---------- 3·4. 시트 (찜 목록 · 계정) : DS dialog.sheet ---------- */
@@ -313,9 +324,9 @@ button { cursor: pointer; }
 .admin-top .tt span { color: var(--c-muted); font-size: var(--t-caption); }
 .admin-top em { color: var(--c-ink); font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
 
-/* ---------- PC (노트북 1024px~) : 큰 사진 + 정보 칸, 사진 클릭 = 다음 ---------- */
+/* ---------- PC (노트북 1024px~) : 휴대폰과 같은 카드를 가로로, 카드 클릭 = 다음 ---------- */
 @media (min-width: 1024px) {
-  :root { --app-w: var(--w-page); }
+  :root { --app-w: var(--w-page); --card-h: min(calc(100dvh - var(--h-topbar) - var(--s-3) - var(--s-6) - var(--s-2)), var(--tp-card-pc-h)); }
 
   .onboard { flex-direction: row; gap: var(--s-8); align-items: stretch; padding: var(--s-7) var(--gutter); }
   .ob-main { flex: none; width: calc(var(--detail-w) * 1.35); min-height: 0; justify-content: center; }
@@ -328,40 +339,19 @@ button { cursor: pointer; }
 
   .topbar { height: calc(var(--h-topbar) + var(--s-3)); padding: 0 calc(var(--gutter) - (var(--hit) - var(--s-5)) / 2) 0 var(--gutter); }
   .wordmark { font-size: var(--tp-t-logo-pc); }
-  .viewer { display: flex; gap: var(--s-7); margin: 0 var(--gutter) var(--s-7); }
-  .deck { position: relative; inset: auto; flex: 1; min-width: 0; }
+  /* 왼쪽 정사각 사진 + 오른쪽 정보, 오른쪽 아래 원형 버튼 3개 (모바일과 같은 부품) */
+  .viewer { margin: 0 var(--gutter) calc(var(--s-6) + var(--s-2)); }
+  .deck { margin: auto; width: min(100%, calc(var(--card-h) + var(--tp-card-pc-info))); height: var(--card-h); }
   .pull { display: none; }
-  .pbody .info { display: none; }
-  .photo { flex: 1; }
-  .pic { inset: var(--s-7); }
-  .next-cue { position: absolute; z-index: 2; top: 50%; pointer-events: none; right: var(--s-5); display: grid; place-items: center; width: var(--h-lg); height: var(--h-lg); border-radius: 50%; background: var(--c-ink); color: var(--c-surface); box-shadow: var(--shadow-2); opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
+  .front { --photo-w: min(var(--card-h), calc(100% - min(var(--tp-card-pc-info-min), 46%))); }
+  .pbody { flex-direction: row; }
+  .photo { flex: 0 1 var(--card-h); min-width: 0; }
+  .pbody .info { flex: 1 0 min(var(--tp-card-pc-info-min), 46%); padding: var(--s-7) var(--s-5) var(--s-5); }
+  .pbody .p-title { -webkit-line-clamp: 3; }
+  .coach { top: auto; bottom: var(--s-4); left: calc(var(--photo-w) / 2); }
+  .next-cue { position: absolute; z-index: 2; top: 50%; left: calc(var(--photo-w) - var(--act) - var(--s-4)); display: grid; place-items: center; width: var(--act); height: var(--act); border-radius: 50%; background: var(--c-depth); color: var(--tp-on-ink); box-shadow: var(--tp-shadow-act); pointer-events: none; opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
   .front:hover .next-cue, .hit:focus-visible ~ .next-cue { opacity: 1; transform: translate(0, -50%); }
   .hit:active ~ .next-cue { transform: translate(var(--s-1), -50%) scale(.965); transition-duration: var(--dur-1); }
-
-  .detail { flex: none; width: var(--detail-w); display: flex; flex-direction: column; justify-content: center; padding: 0; }
-  .detail .p-title { font-size: var(--t-body-lg); line-height: var(--lh-body); -webkit-line-clamp: 3; }
-  .detail .price { margin-top: var(--s-3); font-size: var(--t-kpi); }
-
-  .actions { position: static; gap: var(--s-2); margin-top: var(--s-6); }
-  .actions { display: flex; }
-  .act { display: flex; align-items: center; gap: var(--s-3); width: 100%; height: var(--h-lg); padding: 0 var(--s-4) 0 var(--s-5); border-radius: var(--r-pill); box-shadow: inset 0 0 0 1px var(--c-line-strong); font: 650 var(--t-body)/1 var(--f-sans); text-align: left; }
-  .act svg { width: 20px; height: 20px; flex: none; }
-  .act__label { display: block; flex: 1; }
-  .act .kbd { display: inline-block; }
-  .act.buy { order: -1; box-shadow: inset 0 0 0 1px var(--tp-ring-buy); }
-  .act.buy .kbd { border-color: transparent; background: color-mix(in srgb, var(--c-on-brand) 10%, transparent); color: var(--c-on-brand); }
-  .act.like[aria-pressed="true"] { box-shadow: none; }
-  .act.like[aria-pressed="true"] .kbd { border-color: transparent; background: color-mix(in srgb, var(--c-brand) 18%, transparent); color: var(--c-brand); }
-  .act:active { transform: scale(.97); }
-  @media (hover: hover) {
-    .act:not(.buy):not([aria-pressed="true"]):hover { background: var(--c-surface-2); }
-    .act.buy:hover { background: var(--c-btn-hover); }
-    .act:hover { transform: scale(1.015); }
-  }
-  .next-btn { display: flex; align-items: center; justify-content: space-between; height: var(--h-lg); margin-top: var(--s-5); padding: 0 var(--s-4) 0 var(--s-5); border: 0; border-radius: var(--r-pill); background: var(--c-surface-3); color: var(--c-ink); font: 650 var(--t-body)/1 var(--f-sans); transition: background-color var(--dur-2), transform var(--dur-3) var(--ease-spring); }
-  .next-btn:active { transform: scale(.97); transition-duration: var(--dur-1); }
-  @media (hover: hover) { .next-btn:hover { background: color-mix(in srgb, var(--c-surface-3) 80%, var(--c-ink) 8%); } }
-  .pc-hint { display: block; margin: var(--s-3) 0 0; color: var(--c-muted); font-size: var(--t-caption); text-align: center; }
 
   .nudge { left: 50%; right: auto; width: min(calc(var(--w-sheet) + var(--s-6)), calc(100% - var(--s-6))); translate: -50% 0; }
   .toast { --toast-offset: var(--s-6); }

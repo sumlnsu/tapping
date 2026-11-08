@@ -46,7 +46,11 @@
           <p class="wordmark ob-logo" role="img" aria-label="tapping"><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path class="lg-b" d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="lg-f" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg><span class="lg-l" style="--n:0">t</span><span class="lg-l" style="--n:1">a</span><span class="lg-l" style="--n:2">p</span><span class="lg-l" style="--n:3">p</span><span class="lg-l" style="--n:4">i</span><span class="lg-l" style="--n:5">n</span><span class="lg-l" style="--n:6">g</span></p>
           <h2 class="ob-edit-title">설정 바꾸기</h2>
         </div>
-        <h1 class="display ob-title" id="ob-title">고르지 말고,<br><mark>넘기세요.</mark></h1>
+        <div class="ob-hero">
+          <h1 class="display ob-title" id="ob-title">고르지 말고,<br><mark>넘기세요.</mark></h1>
+          <!-- 앱 아이콘 깊이 연출 (5-2): 바탕·면·접힘 세 겹이 기울기에 서로 다른 깊이로 움직인다 -->
+          <div class="tile" id="ob-tile" aria-hidden="true"><div class="tile__in"><span class="tile__bg"></span><svg class="tile__face" viewBox="0 0 100 100"><path d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/></svg><svg class="tile__flap" viewBox="0 0 100 100"><path d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg></div></div>
+        </div>
         <p class="lead">세 가지만 정하면 바로 시작해요.</p>
       </header>
 
@@ -133,17 +137,14 @@
           <span class="next-cue" aria-hidden="true"><svg class="ico" data-i="arrow-right" viewBox="0 0 24 24"><use href="brand/icons/sprite.svg#arrow-right"/></svg></span>
           <p class="coach" id="coach"></p>
           <div class="actions" id="actions" aria-label="상품 반응">
-            <button class="act like" id="btn-like" type="button" aria-label="찜하기 (L)" aria-pressed="false">
+            <button class="act like" id="btn-like" type="button" aria-label="찜하기 (L)" title="찜하기 (L)" aria-pressed="false">
               <svg class="ico" data-i="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg>
-              <span class="act__label">찜하기</span><kbd class="kbd">L</kbd>
             </button>
-            <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)">
+            <button class="act dislike" id="btn-dislike" type="button" aria-label="별로예요 (D)" title="별로예요 (D)">
               <svg class="ico" data-i="thumbs-down" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#thumbs-down"/></svg>
-              <span class="act__label">별로예요</span><kbd class="kbd">D</kbd>
             </button>
-            <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)">
+            <button class="act buy" id="btn-buy" type="button" aria-label="구매하러 가기 (B)" title="구매하러 가기 (B)">
               <svg class="ico" data-i="bag" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#bag"/></svg>
-              <span class="act__label">구매하러 가기</span><kbd class="kbd">B</kbd>
             </button>
           </div>
           <span class="peel peel--cut" aria-hidden="true"></span>
@@ -155,26 +156,9 @@
         </div>
       </div>
 
-      <!-- PC: 오른쪽 정보 칸 -->
-      <section class="detail" id="detail">
-        <div class="info" id="d-info">
-          <div class="tags">
-            <span class="tp-badge tp-badge--collab" style="--n:0" hidden>COLLAB</span>
-            <span class="tp-badge tp-badge--new" style="--n:1" hidden>NEW</span>
-          </div>
-          <p class="mall"></p>
-          <h2 class="brand"></h2>
-          <p class="p-title"></p>
-          <p class="price figure"></p>
-        </div>
-        <div id="actions-slot"></div>
-        <button class="next-btn" id="btn-next" type="button">다음 상품 <kbd class="kbd">Space</kbd></button>
-        <p class="pc-hint">사진을 클릭해도 넘어가요</p>
-      </section>
-
       <!-- 한 바퀴 다 봄 -->
       <div class="state state--deck" id="allseen" hidden>
-        <picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/all-seen-dark.svg"><img class="state__art" src="brand/states/all-seen-light.svg" alt="" width="160" height="160"></picture>
+        <div class="state__art" data-art="all-seen"><picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/all-seen-dark.svg"><img src="brand/states/all-seen-light.svg" alt="" width="160" height="160"></picture></div>
         <h2 class="state__t" data-copy="allSeenTitle"></h2>
         <p class="state__b" data-copy="allSeenBody"></p>
         <div class="state__btns">
@@ -217,7 +201,7 @@
       </div>
       <div id="like-list"></div>
       <div class="state" id="likes-empty">
-        <picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/empty-wishlist-dark.svg"><img class="state__art" src="brand/states/empty-wishlist-light.svg" alt="" width="160" height="160"></picture>
+        <div class="state__art" data-art="empty-wishlist"><picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/empty-wishlist-dark.svg"><img src="brand/states/empty-wishlist-light.svg" alt="" width="160" height="160"></picture></div>
         <h3 class="state__t" data-copy="emptyLikesTitle"></h3>
         <p class="state__b" data-copy="emptyLikesBody"></p>
         <div class="state__btns state__btns--auto"><button class="btn btn--lg state__btn" id="empty-go" type="button" data-copy="emptyLikesCta"></button></div>
