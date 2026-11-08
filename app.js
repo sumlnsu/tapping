@@ -61,9 +61,11 @@
   }
   // box: 사진 칸(배경색 담당), img의 부모 .pic: 내용 영역. fill: 상품이 채울 비율, aspect: 칸 가로/세로(모르면 실제 크기로)
   function layoutPhoto(box, img, f, fill, aspect) {
-    const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail');
+    const theme = document.documentElement.dataset.theme, dark = theme ? theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    // 누끼가 손상된 상품은 흰 칸에서는 티가 안 나지만 어두운 칸에서는 찢어져 보이므로 다크에서는 원본 사진으로
+    const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail' && !(dark && f.cut[5]));
     box.classList.toggle('is-cut', cut);
-    box.dataset.theme = 'light';            // 사진 칸은 항상 밝게 (어두운 칸에서는 누끼 가장자리에 원래 배경색이 비침)
+    if (cut) delete box.dataset.theme; else box.dataset.theme = 'light';   // 누끼는 카드와 같은 면(다크면 어둡게), 원본 사진은 사진 배경색을 지켜 밝게
     box.style.backgroundColor = cut || !f ? '' : f.bg;
     if (!cut) { img.removeAttribute('style'); return; }
     const pic = img.parentElement;

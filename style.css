@@ -127,10 +127,9 @@ button { cursor: pointer; }
 .next-cue { display: none; }
 
 /* 누끼 모드 (app.js layoutPhoto): 판매처 원본 + 실루엣 마스크, 상품이 칸의 80%를 채우도록 위치·크기를 인라인으로 지정 */
-.is-cut, .ob-art figure.is-cut, .like-item .ph.is-cut { background: var(--c-surface-2); }   /* 흰 상품도 윤곽이 보이게 옅은 회색으로 통일 */
-.is-cut .pic { filter: drop-shadow(0 var(--s-2) var(--s-3) color-mix(in srgb, var(--c-depth) 12%, transparent)); }
+.is-cut, .ob-art figure.is-cut, .like-item .ph.is-cut { background: var(--c-surface); }   /* 사진 칸은 흰색, 상품 그림자 없음 (4-6) */
 .is-cut img { position: absolute; max-width: none; object-fit: fill; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
-.coach { position: absolute; z-index: 2; left: 50%; top: calc(var(--photo-h) - var(--h-md) - var(--s-4)); height: var(--h-md); margin: 0; padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--c-depth); color: var(--tp-on-ink); font: 600 var(--t-label)/var(--h-md) var(--f-sans); white-space: nowrap; pointer-events: none; translate: -50% 0; transition: opacity var(--dur-4) var(--ease-standard); }   /* 구매 토스트와 같은 모양, 상품을 가리지 않게 사진 칸 아래쪽 */
+.coach { position: absolute; z-index: 2; left: 50%; top: calc(var(--photo-h) - var(--h-md) - var(--s-4)); height: var(--h-md); margin: 0; padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--tp-ink-pill); color: var(--tp-on-ink); font: 600 var(--t-label)/var(--h-md) var(--f-sans); white-space: nowrap; pointer-events: none; translate: -50% 0; transition: opacity var(--dur-4) var(--ease-standard); }   /* 구매 토스트와 같은 모양, 상품을 가리지 않게 사진 칸 아래쪽 */
 .coach.hide { opacity: 0; }
 
 /* 카드 정보 (4-1): 큰 브랜드명, 자간을 넓힌 작은 대문자 라벨 */
@@ -146,7 +145,7 @@ button { cursor: pointer; }
 .tp-badge { position: relative; display: inline-flex; align-items: center; height: var(--tp-badge-h); padding: 0 var(--tp-badge-pr) 0 var(--tp-badge-pl); border-radius: var(--tp-badge-r); background: var(--b); color: var(--f); font: 700 var(--tp-badge-t)/1 var(--f-sans); letter-spacing: .06em; white-space: nowrap; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tp-badge-fold)), calc(100% - var(--tp-badge-fold)) 100%, 0 100%); }
 .tp-badge::after { content: ""; position: absolute; right: 0; bottom: 0; width: var(--tp-badge-fold); height: var(--tp-badge-fold); background: var(--flap); border-top-left-radius: var(--tp-badge-fold-r); clip-path: polygon(0 0, 100% 0, 0 100%); }
 .tp-badge--collab { --b: var(--c-brand); --f: var(--c-on-brand); --flap: var(--c-on-brand); }
-.tp-badge--new { --b: var(--c-depth); --f: var(--tp-on-ink); --flap: var(--tp-flap-new); }
+.tp-badge--new { --b: var(--tp-ink-pill); --f: var(--tp-on-ink); --flap: var(--tp-flap-new); }
 .tp-badge--admin { --b: var(--tp-admin-bg); --f: var(--tp-admin-fg); --flap: var(--c-brand); font-size: var(--tp-badge-t-ko); letter-spacing: 0; }
 .tp-badge--sm { --tp-badge-h: var(--tp-badge-sm-h); --tp-badge-r: var(--tp-badge-sm-r); --tp-badge-fold: var(--tp-badge-sm-fold); --tp-badge-fold-r: var(--tp-badge-sm-fold-r); --tp-badge-pl: var(--tp-badge-sm-pl); --tp-badge-pr: var(--tp-badge-sm-pr); --tp-badge-t: var(--tp-badge-sm-t); }
 .tags.play .tp-badge { animation: tp-badge-in 280ms var(--ease-out) both; animation-delay: calc(var(--n, 0) * 60ms); }
@@ -181,7 +180,7 @@ button { cursor: pointer; }
 [data-phase="reset"] .front, [data-phase="reset"] .back, [data-phase="reset"] .peel, [data-phase="reset"] .pic { transition: none; }
 
 /* 구매 토스트: 카드 위 16px 가운데 */
-.buy-toast { position: absolute; z-index: 5; left: 50%; top: var(--s-4); display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-md); padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--c-depth); color: var(--tp-on-ink); font: 600 var(--t-label)/1 var(--f-sans); white-space: nowrap; translate: -50% 0; animation: ds-rise var(--dur-3) var(--ease-out); }
+.buy-toast { position: absolute; z-index: 5; left: 50%; top: var(--s-4); display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-md); padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--tp-ink-pill); color: var(--tp-on-ink); font: 600 var(--t-label)/1 var(--f-sans); white-space: nowrap; translate: -50% 0; animation: ds-rise var(--dur-3) var(--ease-out); }
 .buy-toast svg { width: var(--s-4); height: var(--s-4); color: var(--c-brand); }
 
 /* 아이콘 반응 (5-3): 누를 때 1회, 모두 제자리로 */
@@ -349,7 +348,7 @@ button { cursor: pointer; }
   .pbody .info { flex: 1 0 min(var(--tp-card-pc-info-min), 46%); padding: var(--s-7) var(--s-5) var(--s-5); }
   .pbody .p-title { -webkit-line-clamp: 3; }
   .coach { top: auto; bottom: var(--s-4); left: calc(var(--photo-w) / 2); }
-  .next-cue { position: absolute; z-index: 2; top: 50%; left: calc(var(--photo-w) - var(--act) - var(--s-4)); display: grid; place-items: center; width: var(--act); height: var(--act); border-radius: 50%; background: var(--c-depth); color: var(--tp-on-ink); box-shadow: var(--tp-shadow-act); pointer-events: none; opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
+  .next-cue { position: absolute; z-index: 2; top: 50%; left: calc(var(--photo-w) - var(--act) - var(--s-4)); display: grid; place-items: center; width: var(--act); height: var(--act); border-radius: 50%; background: var(--tp-ink-pill); color: var(--tp-on-ink); box-shadow: var(--tp-shadow-act); pointer-events: none; opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
   .front:hover .next-cue, .hit:focus-visible ~ .next-cue { opacity: 1; transform: translate(0, -50%); }
   .hit:active ~ .next-cue { transform: translate(var(--s-1), -50%) scale(.965); transition-duration: var(--dur-1); }
 
