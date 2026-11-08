@@ -17,11 +17,11 @@
     if (!raw) return [];
     if (Array.isArray(raw)) return raw;
     const unpackImg = s => { const k = s.indexOf('~'); return k > 0 && k < 3 ? raw.img[+s.slice(0, k)] + s.slice(k + 1) : s; };
-    return raw.items.map(([pid, m, b, t, p, e, c, s, g, x, u, im, r, f]) => {
+    return raw.items.map(([pid, m, b, t, p, e, c, s, g, x, u, im, r, f, bg]) => {
       const [mall, idPrefix, urlPrefix] = raw.malls[m];
       return {
         id: idPrefix + pid, b: raw.brands[b], t, p, e, c, s, g, x, m: mall,
-        u: /^https?:/.test(u) ? u : urlPrefix + (u || pid), im: unpackImg(im), r, f
+        u: /^https?:/.test(u) ? u : urlPrefix + (u || pid), im: unpackImg(im), r, f, bg: bg ? '#' + bg : ''
       };
     });
   }
@@ -184,6 +184,7 @@
     if (shownLog.length > 30) shownLog.shift();
     $('photo').src = f.im;
     $('photo').alt = `${f.b} ${f.t}`;
+    $('card').style.backgroundColor = f.bg;            // 사진 배경색에 칸을 맞춰 회색 상자가 안 보이게
     $('brand').textContent = f.b;
     $('title').textContent = f.t;
     $('title').title = f.t;
@@ -313,6 +314,7 @@
       const fig = document.createElement('figure');
       fig.dataset.theme = 'light';
       fig.style.setProperty('--i', i);
+      fig.style.backgroundColor = f.bg;
       const img = document.createElement('img');
       img.src = f.im; img.alt = ''; img.referrerPolicy = 'no-referrer'; img.loading = 'lazy';
       fig.appendChild(img);
@@ -456,6 +458,7 @@
     a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
     a.innerHTML = '<div class="ph" data-theme="light"><img loading="lazy" referrerpolicy="no-referrer" alt=""><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
     a.querySelector('img').src = f.im;
+    a.querySelector('.ph').style.backgroundColor = f.bg;
     a.querySelector('.sub').textContent = `${CAT_LABEL[f.c] || ''} · ${f.s || '기타'}`;
     a.querySelector('b').textContent = f.b;
     a.querySelector('.t').textContent = f.t;
