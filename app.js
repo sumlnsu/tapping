@@ -17,14 +17,64 @@
     if (!raw) return [];
     if (Array.isArray(raw)) return raw;
     const unpackImg = s => { const k = s.indexOf('~'); return k > 0 && k < 3 ? raw.img[+s.slice(0, k)] + s.slice(k + 1) : s; };
-    return raw.items.map(([pid, m, b, t, p, e, c, s, g, x, u, im, r, f, bg]) => {
+    return raw.items.map(([pid, m, b, t, p, e, c, s, g, x, u, im, r, f, bg, cut]) => {
       const [mall, idPrefix, urlPrefix] = raw.malls[m];
       return {
         id: idPrefix + pid, b: raw.brands[b], t, p, e, c, s, g, x, m: mall,
-        u: /^https?:/.test(u) ? u : urlPrefix + (u || pid), im: unpackImg(im), r, f, bg: bg ? '#' + bg : ''
+        u: /^https?:/.test(u) ? u : urlPrefix + (u || pid), im: unpackImg(im), r, f, bg: bg ? '#' + bg : '', cut: cut || 0
       };
     });
   }
+
+  // ---------- 누끼 + 크기 통일 ----------
+  // 판매처 원본 사진 위에 실루엣 마스크(R2)를 씌워 배경을 지우고, 상품 영역이 칸의 일정 비율을 채우도록 맞춘다
+  const MASK_BASE = (window.TAPPING_FEED && window.TAPPING_FEED.maskBase) || '';
+  // 마스크 파일 이름: pipeline/lib/feedutil.js maskKey와 같은 계산 (cyrb53)
+  function maskKey(str) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+  const maskUrl = f => `${MASK_BASE}/${f.mk || (f.mk = maskKey(f.im))}.png`;
+  // 마스크를 못 불러오면(서버·CORS 문제) 상품이 통째로 가려지므로 미리 받아 보고, 실패하면 원본 그대로 보여 준다
+  const maskState = new Map();          // url → 'ok' | 'fail' | 'loading'
+  function preloadMask(f, onDone) {
+    if (!MASK_BASE || !f || !f.cut) return;
+    const url = maskUrl(f);
+    if (maskState.get(url) === 'ok' || maskState.get(url) === 'fail') return onDone && onDone();
+    maskState.set(url, 'loading');
+    const im = new Image();
+    im.crossOrigin = 'anonymous';       // CSS mask도 CORS로 받으므로 같은 조건으로 확인
+    im.onload = () => { maskState.set(url, 'ok'); onDone && onDone(); };
+    im.onerror = () => { maskState.set(url, 'fail'); onDone && onDone(); };
+    im.src = url;
+  }
+  // box: 사진 칸(배경색 담당), img의 부모 .pic: 내용 영역. fill: 상품이 채울 비율, aspect: 칸 가로/세로(모르면 실제 크기로)
+  function layoutPhoto(box, img, f, fill, aspect) {
+    const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail');
+    box.classList.toggle('is-cut', cut);
+    box.dataset.theme = 'light';            // 사진 칸은 항상 밝게 (어두운 칸에서는 누끼 가장자리에 원래 배경색이 비침)
+    box.style.backgroundColor = cut || !f ? '' : f.bg;
+    if (!cut) { img.removeAttribute('style'); return; }
+    const pic = img.parentElement;
+    const A = aspect || (pic.clientWidth / Math.max(1, pic.clientHeight)) || 1;
+    const [x0, y0, x1, y1, arK] = f.cut, ar = arK / 1000;
+    const bw = Math.max(0.05, (x1 - x0) / 1000), bh = Math.max(0.05, (y1 - y0) / 1000);
+    // 칸 폭을 1로 두고: 상품 가로가 fill, 또는 상품 세로가 fill×칸 높이 중 먼저 닿는 쪽에 맞춤
+    let dw = Math.min(fill / bw, (fill / A) * ar / bh);
+    dw = Math.min(dw, Math.min(1, ar / A) * 2.4);     // 아주 작게 찍힌 상품은 2.4배까지만 (흐려지지 않게)
+    const dh = dw / ar;
+    const left = 0.5 - dw * (x0 + x1) / 2000, top = 0.5 / A - dh * (y0 + y1) / 2000;
+    const url = `url("${maskUrl(f)}")`;
+    img.style.cssText = `width:${(dw * 100).toFixed(2)}%;height:${(dh * A * 100).toFixed(2)}%;left:${(left * 100).toFixed(2)}%;top:${(top * A * 100).toFixed(2)}%;-webkit-mask-image:${url};mask-image:${url}`;
+  }
+  const FILL = { feed: 0.8, tile: 0.8, art: 0.78 };
 
   // ---------- 저장소 (사생활 보호 모드 등에서 실패해도 동작) ----------
   const store = {
@@ -184,7 +234,8 @@
     if (shownLog.length > 30) shownLog.shift();
     $('photo').src = f.im;
     $('photo').alt = `${f.b} ${f.t}`;
-    $('card').style.backgroundColor = f.bg;            // 사진 배경색에 칸을 맞춰 회색 상자가 안 보이게
+    layoutPhoto($('card'), $('photo'), f, FILL.feed);  // 누끼면 크기 통일, 아니면 사진 배경색에 칸을 맞춤
+    preloadMask(f, () => { if (current === f) layoutPhoto($('card'), $('photo'), f, FILL.feed); });
     $('brand').textContent = f.b;
     $('title').textContent = f.t;
     $('title').title = f.t;
@@ -195,7 +246,7 @@
     setLikeBtn(likes.includes(f.id));
     // 다음 상품 미리 받아 두기
     nextItem = pick();
-    if (nextItem) { const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = nextItem.im; }
+    if (nextItem) { const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = nextItem.im; preloadMask(nextItem); }
   }
 
   function advance(leaveClass) {
@@ -312,13 +363,16 @@
     for (const f of picks) if (!used.has(f.b) && chosen.length < 6) { used.add(f.b); chosen.push(f); }
     chosen.forEach((f, i) => {
       const fig = document.createElement('figure');
-      fig.dataset.theme = 'light';
       fig.style.setProperty('--i', i);
-      fig.style.backgroundColor = f.bg;
+      const pic = document.createElement('div');
+      pic.className = 'pic';
       const img = document.createElement('img');
       img.src = f.im; img.alt = ''; img.referrerPolicy = 'no-referrer'; img.loading = 'lazy';
-      fig.appendChild(img);
+      pic.appendChild(img);
+      fig.appendChild(pic);
       art.appendChild(fig);
+      layoutPhoto(fig, img, f, FILL.art, 0.78);                   // 4:5 칸
+      preloadMask(f, () => layoutPhoto(fig, img, f, FILL.art, 0.78));
     });
   }
   document.querySelectorAll('[data-key]').forEach(group => {
@@ -456,9 +510,11 @@
   function likeCard(f) {
     const a = document.createElement('a');
     a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = '<div class="ph" data-theme="light"><img loading="lazy" referrerpolicy="no-referrer" alt=""><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
+    a.innerHTML = '<div class="ph" data-theme="light"><div class="pic"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><button type="button" class="unlike" aria-label="찜 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2Z"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>';
     a.querySelector('img').src = f.im;
-    a.querySelector('.ph').style.backgroundColor = f.bg;
+    const ph = a.querySelector('.ph'), pimg = a.querySelector('img');
+    layoutPhoto(ph, pimg, f, FILL.tile, 1);                       // 정사각형 칸
+    preloadMask(f, () => layoutPhoto(ph, pimg, f, FILL.tile, 1));
     a.querySelector('.sub').textContent = `${CAT_LABEL[f.c] || ''} · ${f.s || '기타'}`;
     a.querySelector('b').textContent = f.b;
     a.querySelector('.t').textContent = f.t;
@@ -767,6 +823,9 @@
     else if (e.key.toLowerCase() === 'b') onBuy();
   });
   matchMedia('(min-width: 1024px)').addEventListener('change', () => { if (!$('onboard').hidden) renderArt(); });
+  // 창 크기가 바뀌면 사진 칸 비율이 달라지므로 다시 맞춤
+  let resizeTimer;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (current) layoutPhoto($('card'), $('photo'), current, FILL.feed); }, 120); });
 
   // ---------- 시작: 자동 로그인 확인 → 화면 ----------
   async function boot() {

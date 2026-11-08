@@ -78,9 +78,15 @@ button { cursor: pointer; }
 .viewer { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; margin: var(--s-2) var(--s-3) max(var(--s-4), env(safe-area-inset-bottom)); border-radius: var(--r-xl); overflow: hidden; background: var(--c-surface); box-shadow: var(--edge), var(--shadow-1), 0 0 0 1px var(--c-line); }
 .stage { position: relative; flex: 1; min-height: 0; cursor: pointer; outline: none; user-select: none; }
 .stage:focus-visible { box-shadow: inset var(--focus-ring); }
-.photo { position: absolute; inset: 0; margin: 0; padding: var(--s-5); background: var(--c-surface); transition: background-color var(--dur-3) var(--ease-standard); }
+.photo { position: absolute; inset: 0; margin: 0; background: var(--c-surface); transition: background-color var(--dur-3) var(--ease-standard); }
+.pic { position: absolute; inset: var(--s-5); }
 .photo img { display: block; width: 100%; height: 100%; object-fit: contain; transition: transform var(--dur-4) var(--ease-out), opacity var(--dur-3) var(--ease-out); }
 .next-cue { display: none; }
+
+/* 누끼 모드 (app.js layoutPhoto): 판매처 원본 + 실루엣 마스크, 상품이 칸의 80%를 채우도록 위치·크기를 인라인으로 지정 */
+.is-cut, .ob-art figure.is-cut, .like-item .ph.is-cut { background: var(--c-surface-2); }   /* 흰 상품도 윤곽이 보이게 옅은 회색으로 통일 */
+.is-cut .pic { filter: drop-shadow(0 var(--s-2) var(--s-3) color-mix(in srgb, var(--c-depth) 12%, transparent)); }
+.is-cut img { position: absolute; max-width: none; object-fit: fill; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
 .coach { position: absolute; left: 50%; top: 45%; margin: 0; padding: var(--s-2) var(--s-4); border-radius: var(--r-pill); background: var(--c-ink); color: var(--c-surface); font: 650 var(--t-label)/1.4 var(--f-sans); white-space: nowrap; pointer-events: none; transform: translate(-50%, -50%); transition: opacity var(--dur-4) var(--ease-standard); }
 .coach.hide { opacity: 0; }
 
@@ -144,8 +150,9 @@ button { cursor: pointer; }
 @media (min-width: 640px) { .like-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .like-item { display: flex; flex-direction: column; overflow: hidden; border-radius: var(--r-md); background: var(--c-surface); box-shadow: 0 0 0 1px var(--c-line); color: inherit; text-decoration: none; transition: transform var(--dur-3) var(--ease-spring), box-shadow var(--dur-3); }
 @media (hover: hover) { .like-item:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--c-line-strong), var(--shadow-1); } }
-.like-item .ph { position: relative; display: grid; place-items: center; aspect-ratio: 1; padding: var(--s-3); background: var(--c-surface); }
-.like-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.like-item .ph { position: relative; aspect-ratio: 1; background: var(--c-surface); }
+.like-item .pic { inset: var(--s-3); }
+.like-item img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .unlike { position: absolute; top: var(--s-1); right: var(--s-1); display: grid; place-items: center; width: var(--hit); height: var(--hit); border: 0; background: none; color: var(--c-depth); }
 .unlike svg { width: 20px; height: 20px; fill: var(--c-brand); stroke: var(--c-depth); }
 .like-item .tx { padding: var(--s-2) var(--s-3) var(--s-3); font-size: var(--t-caption); }
@@ -196,15 +203,16 @@ button { cursor: pointer; }
   .ob-main { flex: none; width: calc(var(--detail-w) * 1.35); min-height: 0; justify-content: center; }
   .ob-foot { margin-top: var(--s-2); }
   .ob-art { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4) var(--s-3); align-content: center; }
-  .ob-art figure { margin: 0; display: grid; place-items: center; aspect-ratio: 4 / 5; padding: var(--s-4); border-radius: var(--r-lg); background: var(--c-surface); box-shadow: var(--edge), 0 0 0 1px var(--c-line); animation: ds-rise var(--dur-5) var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 6) * var(--stagger) * 2); }
+  .ob-art figure { position: relative; margin: 0; aspect-ratio: 4 / 5; border-radius: var(--r-lg); background: var(--c-surface); box-shadow: var(--edge), 0 0 0 1px var(--c-line); animation: ds-rise var(--dur-5) var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 6) * var(--stagger) * 2); }
   .ob-art figure:nth-child(3n + 2) { translate: 0 var(--s-6); }
-  .ob-art img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .ob-art .pic { inset: var(--s-4); }
+  .ob-art img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
   .topbar { height: calc(var(--h-topbar) + var(--s-3)); padding: 0 var(--gutter); }
   .wordmark { font-size: var(--t-body-lg); }
   .viewer { flex-direction: row; gap: var(--s-7); margin: 0 var(--gutter) var(--s-6); overflow: visible; border-radius: 0; background: none; box-shadow: none; }
   .stage { flex: 1; border-radius: var(--r-xl); overflow: hidden; background: var(--c-surface); box-shadow: var(--edge), 0 0 0 1px var(--c-line); }
-  .photo { padding: var(--s-7); }
+  .pic { inset: var(--s-7); }
   .next-cue { position: absolute; top: 50%; right: var(--s-5); display: grid; place-items: center; width: var(--h-lg); height: var(--h-lg); border-radius: 50%; background: var(--c-ink); color: var(--c-surface); box-shadow: var(--shadow-2); opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
   .stage:hover .next-cue, .stage:focus-visible .next-cue { opacity: 1; transform: translate(0, -50%); }
   .stage:hover .photo img { transform: scale(1.015); }
