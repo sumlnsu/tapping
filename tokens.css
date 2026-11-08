@@ -208,6 +208,7 @@
   --tp-badge-sm-h: 20px; --tp-badge-sm-r: 5px; --tp-badge-sm-fold: 7px; --tp-badge-sm-fold-r: 2.5px; --tp-badge-sm-pl: 7px; --tp-badge-sm-pr: 11px; --tp-badge-sm-t: 10px; --tp-badge-sm-t-ko: 11px;
   --tp-flap-new: #c9c9c3;
   --tp-on-ink: #ffffff;
+  --tp-ink-pill: light-dark(#0a0a0a, #242424);     /* 토스트·NEW 배지: 어두운 카드 위에서 묻히지 않게 */
   --tp-admin-bg: light-dark(#0a0a0a, #242424);
   --tp-admin-fg: light-dark(#ffffff, #f4f4f0);
 
