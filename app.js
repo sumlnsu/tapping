@@ -91,7 +91,7 @@
     const url = `url("${maskUrl(f)}")`;
     img.style.cssText = `width:${(dw * 100).toFixed(2)}%;height:${(dh * A * 100).toFixed(2)}%;left:${(left * 100).toFixed(2)}%;top:${(top * A * 100).toFixed(2)}%;-webkit-mask-image:${url};mask-image:${url}`;
   }
-  const FILL = { feed: 0.8, tile: 0.8, art: 0.78 };
+  const FILL = { feed: 1, thumb: 1, tile: 0.8, art: 0.78 };   // feed·thumb: 사진 칸의 80% 상자(.pic)를 채움
 
   // ---------- 저장소 (사생활 보호 모드 등에서 실패해도 동작) ----------
   const store = {
@@ -302,7 +302,7 @@
     if (shownLog.length > 30) shownLog.shift();
     if (!filled) fillBody(bodyFront, f);
     shownCount++;
-    bodyFront.querySelector('.seq').textContent = `${String(shownCount).padStart(2, '0')} / ${poolTotal < 10 ? '0' + poolTotal : poolTotal.toLocaleString()}`;
+    paintSeq();
     playBadges(bodyFront);
     $('sr-now').textContent = `${f.b} ${f.t} ${won(f.p, f.e)}`;
     setLikeBtn(likes.includes(f.id));
@@ -310,6 +310,7 @@
     $('shell-back').hidden = !nextItem;
     if (nextItem) { fillBody(bodyBack, nextItem); refillSpare(); }
   }
+  function paintSeq() { bodyFront.querySelector('.seq').textContent = `${String(shownCount).padStart(2, '0')} / ${poolTotal < 10 ? '0' + poolTotal : poolTotal.toLocaleString()}`; }
   function setAllSeen(on) {
     $('viewer').classList.toggle('is-empty', on);
     $('allseen').hidden = !on;
@@ -317,7 +318,6 @@
   }
   // 덱을 처음부터: 상품이 하나도 없으면 '한 바퀴 다 봄' 화면
   function startDeck() {
-    if (coverOn) endCover();
     peelGen++;
     setPhase('idle');
     current = null;
@@ -329,14 +329,7 @@
   }
   function setPhase(p) { phase = p; $('viewer').dataset.phase = p; }
 
-  // ---------- 표지 카드 (4-7): 덱 맨 앞 한 장. 순번에 세지 않고, 넘기는 동작은 상품과 같은 Peel ----------
-  const COVER_KEY = 'tapping.coverSeen';
-  const session = {
-    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
-    set(k) { try { sessionStorage.setItem(k, '1'); } catch { /* 저장이 막힌 환경 */ } }
-  };
-  let coverOn = false, coverNudge = 0;
-  // 설정 요약: 전체인 항목은 생략, 카테고리 2개 이상은 "첫 항목 외 N", 가격은 이어지면 합친 범위
+  // ---------- 설정 요약: 전체인 항목은 생략, 카테고리 2개 이상은 "첫 항목 외 N" ----------
   function priceText([lo, hi]) {
     const man = v => (v / 10000).toLocaleString('ko-KR');
     if (!lo && hi === null) return '';
@@ -344,7 +337,7 @@
     if (hi === null) return `${man(lo)}만~`;
     return `${man(lo)}~${man(hi)}만`;
   }
-  function coverSummary() {
+  function settingsSummary() {
     const s = settings, parts = [];
     if (s.gender === 'men') parts.push('남성'); else if (s.gender === 'women') parts.push('여성');
     if (s.cats.length < ALL_CATS.length) {
@@ -353,63 +346,166 @@
     }
     const money = priceText(priceRange(s));
     if (money) parts.push(money);
-    return parts.join(' · ') || COPY.coverAll;
+    return parts.join(' · ') || COPY.homeAll;
   }
-  function renderCover() {
-    const now = new Date(Date.now() + 9 * 36e5), pool = FEED.filter(f => matches(f, settings));
-    const n = pool.filter(f => f.f === TODAY).length, main = $('cv-main'), zero = $('cv-zero');
-    $('cv-label').textContent = COPY.coverLabel(now.getUTCMonth() + 1, now.getUTCDate());
-    main.hidden = !n;
-    zero.hidden = !!n;
-    if (n) {
-      $('cv-n').textContent = n.toLocaleString('ko-KR');
-      $('cv-s').textContent = COPY.coverNew;
-      main.dataset.d = Math.min(5, Math.max(3, String(n).length));
-    } else {
-      $('cv-zt').textContent = COPY.coverZero;
-      $('cv-zs').textContent = COPY.coverRecent(pool.filter(isNew).length.toLocaleString('ko-KR'));
-    }
-    $('cv-set').textContent = coverSummary();
-    $('stage').setAttribute('aria-label', COPY.coverAria(n.toLocaleString('ko-KR')));
+
+  // ---------- 홈 ↔ 태핑 (4-9, 5-7) ----------
+  const feedEl = $('feed');
+  let view = 'home', navBusy = false, pendingBack = false, deckReady = false;
+  let resumeN = store.get('resume', 0);                  // 이어 볼 순번: 기기에 저장 (비로그인도 동일)
+  function saveResume() { resumeN = Math.max(0, shownCount - 1); store.set('resume', resumeN); }
+  function setView(v) {
+    view = v;
+    feedEl.dataset.view = v;
+    $('tab-home').setAttribute('aria-current', v === 'home' ? 'page' : 'false');
+    $('tab-deck').setAttribute('aria-current', v === 'tap' ? 'page' : 'false');
   }
-  function startCover() {
+  const setFold = state => { $('today').dataset.fold = state; };
+  const refreshTotal = () => { poolTotal = FEED.filter(f => matches(f, settings)).length; };
+  function relayoutDeck() { for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed); }
+  function enterApp() {
+    $('onboard').hidden = true;
+    $('feed').hidden = false;
+    refreshTotal();
+    const restore = history.state && history.state.view === 'tap';   // 새로고침은 보던 화면 유지, 앱 실행·첫 설정 직후는 홈
+    setView(restore ? 'tap' : 'home');
+    setFold('on');
+    renderHome();
+    if (restore) openDeck();
+  }
+  function openDeck() {
+    if (deckReady) return;
+    deckReady = true;
+    shownCount = resumeN;
+    startDeck();
+    armCoach();
+  }
+  function armCoach() {
+    $('coach').textContent = finePointer ? '사진을 클릭하면 다음 상품' : '빈 곳을 탭하면 다음 상품';
+    if (store.get('coachDone', false)) hideCoach(); else setTimeout(hideCoach, 3500);
+  }
+  // 썸네일에서 고른 상품부터 시작
+  function startFrom(f) {
+    if (!deckReady) { deckReady = true; shownCount = resumeN; armCoach(); }
     peelGen++;
     setPhase('idle');
-    current = null;
-    spare = null;
-    nextItem = pick();
-    setAllSeen(!nextItem);
-    if (!nextItem) return;
-    $('shell-back').hidden = false;
-    fillBody(bodyBack, nextItem);
-    refillSpare();
-    renderCover();
-    coverOn = true;
-    $('cover').hidden = false;
-    const v = $('viewer');
-    if (reduceMotion.matches) { v.dataset.cover = 'on'; return; }   // 동작 줄이기: 등장·들썩 없이 접힘 고정
-    v.dataset.cover = 'in';
-    const d = $('deck'), done = e => { if (e.target !== d) return; d.classList.remove('enter'); d.removeEventListener('animationend', done); };
-    d.addEventListener('animationend', done);
-    d.classList.add('enter');
-    setTimeout(() => { if (coverOn) v.dataset.cover = 'on'; }, 260);
-    coverNudge = setInterval(() => {
-      if (!coverOn || phase !== 'idle' || v.dataset.cover !== 'on') return;
-      v.setAttribute('data-nudge', '');
-      setTimeout(() => v.removeAttribute('data-nudge'), 300);
-    }, 3200);
+    current = null; nextItem = null; spare = null;
+    setAllSeen(false);
+    show(f);
   }
-  function endCover() {
-    coverOn = false;
-    clearInterval(coverNudge);
-    const v = $('viewer');
-    delete v.dataset.cover;
-    v.removeAttribute('data-nudge');
-    $('cover').hidden = true;
-    $('stage').setAttribute('aria-label', '다음 상품 보기');
+  function goTap(f) {
+    if (navBusy || view === 'tap') return;
+    history.pushState({ view: 'tap' }, '');
+    const instant = reduceMotion.matches;
+    if (instant) setView('tap');
+    else { navBusy = true; feedEl.dataset.anim = 'to-tap'; setFold('go'); }
+    if (f) startFrom(f); else openDeck();
+    relayoutDeck();
+    if (instant) return;
+    setTimeout(() => {
+      delete feedEl.dataset.anim;
+      setView('tap');
+      navBusy = false;
+      if (pendingBack) { pendingBack = false; goHome(true); }
+    }, 620);
+  }
+  function goHome(fromPop) {
+    if (navBusy) { if (fromPop && feedEl.dataset.anim === 'to-tap') pendingBack = true; return; }
+    if (view !== 'tap') return;
+    hideUndo();
+    if (!fromPop) { skipPop = true; history.back(); }
+    renderHome();
+    if (reduceMotion.matches) { setView('home'); setFold('on'); return; }
+    navBusy = true;
+    setFold('off');
+    feedEl.dataset.anim = 'to-home';
+    setTimeout(() => setFold('on'), 380);
+    setTimeout(() => { delete feedEl.dataset.anim; setView('home'); navBusy = false; }, 620);
+  }
+  setInterval(() => {                                    // 오늘 카드 모서리: 3200ms마다 들썩
+    if (view !== 'home' || navBusy || feedEl.hidden || reduceMotion.matches || $('today').dataset.fold !== 'on') return;
+    setFold('up');
+    setTimeout(() => { if ($('today').dataset.fold === 'up') setFold('on'); }, 300);
+  }, 3200);
+
+  function homeThumb(f, square) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = square ? 'hsq' : 'hthumb';
+    btn.setAttribute('aria-label', `${f.b} ${f.t}`);
+    const ph = document.createElement('div'), pic = document.createElement('div'), img = document.createElement('img');
+    ph.className = 'hph'; pic.className = 'pic';
+    img.alt = ''; img.referrerPolicy = 'no-referrer'; img.src = f.im;
+    pic.appendChild(img); ph.appendChild(pic); btn.appendChild(ph);
+    layoutPhoto(ph, img, f, FILL.thumb, square ? 1 : 0.79);
+    preloadMask(f, () => layoutPhoto(ph, img, f, FILL.thumb, square ? 1 : 0.79));
+    if (square) return btn;
+    if (f.x || isNew(f)) {
+      const tag = document.createElement('span');
+      tag.className = `tp-badge tp-badge--sm hph__tag tp-badge--${f.x ? 'collab' : 'new'}`;
+      tag.textContent = f.x ? 'COLLAB' : 'NEW';
+      ph.appendChild(tag);
+    }
+    const name = document.createElement('span'), price = document.createElement('span');
+    name.className = 'hthumb__b'; name.textContent = f.b;
+    price.className = 'hthumb__p';
+    if (f.e) { const est = document.createElement('span'); est.className = 'hthumb__est'; est.textContent = '약 '; price.append(est, won(f.p)); }   // 72px 칸에서는 '약'을 빼야 한 줄에 들어감
+    else price.textContent = won(f.p);
+    btn.append(name, price);
+    return btn;
+  }
+  function renderHome() {
+    const now = new Date(Date.now() + 9 * 36e5), pool = FEED.filter(f => matches(f, settings) && !disliked.has(f.id));
+    const today = pool.filter(f => f.f === TODAY), recent = pool.filter(isNew), n = today.length;
+    $('hm-label').textContent = COPY.homeLabel(now.getUTCMonth() + 1, now.getUTCDate());
+    $('hm-main').hidden = !n;
+    $('hm-zero').hidden = !!n;
+    if (n) { $('hm-n').textContent = n.toLocaleString('ko-KR'); $('hm-main').dataset.d = Math.min(5, Math.max(3, String(n).length)); }
+    else $('hm-zs').textContent = COPY.homeRecentCount(recent.length.toLocaleString('ko-KR'));
+    $('hm-status').textContent = resumeN > 0 ? COPY.homeResume(resumeN.toLocaleString('ko-KR')) : n ? COPY.homeFirst : COPY.homeRecentFirst;
+    $('hm-set').textContent = settingsSummary();
+    $('today-hit').setAttribute('aria-label', COPY.homeAria(n.toLocaleString('ko-KR')));
+    const list = (n ? today : recent).slice().sort((a, b) => prior(b) - prior(a));
+    $('hm-list-title').textContent = n ? COPY.homeToday : COPY.homeRecent;
+    $('hm-list-count').textContent = COPY.homeCount(list.length.toLocaleString('ko-KR'));
+    const row = $('hm-new');
+    row.replaceChildren(...list.slice(0, 3).map(f => { const b = homeThumb(f); b.addEventListener('click', () => goTap(f)); return b; }));
+    if (list.length > 3) {
+      const more = document.createElement('button');
+      more.type = 'button'; more.className = 'hmore';
+      const a = document.createElement('b'), s = document.createElement('span');
+      a.textContent = `+${(list.length - 3).toLocaleString('ko-KR')}`; s.textContent = COPY.homeMore;
+      more.append(a, s);
+      more.addEventListener('click', () => goTap());
+      row.appendChild(more);
+    }
+    const box = $('hm-likes'), items = likes.map(id => BY_ID.get(id)).filter(Boolean);
+    $('hm-all').hidden = !me || !items.length;
+    if (!me) {
+      const p = document.createElement('p'), b = document.createElement('button');
+      p.className = 'hline'; p.textContent = COPY.homeLikesGuest;
+      b.type = 'button'; b.className = 'hline__login'; b.textContent = COPY.homeLogin;
+      b.addEventListener('click', () => openAuth());
+      p.appendChild(b);
+      box.replaceChildren(p);
+    } else if (!items.length) {
+      const p = document.createElement('p');
+      p.className = 'hline'; p.textContent = COPY.homeLikesEmpty;
+      box.replaceChildren(p);
+    } else {
+      const wrap = document.createElement('div');
+      wrap.className = 'hrow';
+      wrap.append(...items.slice(0, 3).map(f => { const b = homeThumb(f, true); b.addEventListener('click', openLikes); return b; }));
+      if (items.length > 3) {
+        const more = document.createElement('button');
+        more.type = 'button'; more.className = 'hsq hsq--more'; more.textContent = `+${items.length - 3}`;
+        more.addEventListener('click', openLikes);
+        wrap.appendChild(more);
+      }
+      box.replaceChildren(wrap);
+    }
   }
   function swapToNext() {
-    if (coverOn) endCover();
     if (!nextItem) return setAllSeen(true);
     const front = bodyBack, back = bodyFront;
     $('front-face').prepend(front);
@@ -417,10 +513,12 @@
     bodyFront = front;
     bodyBack = back;
     show(nextItem, true);
+    saveResume();
   }
   // Peel 전환 (5-1): 모서리 접힘 140ms → 위로 빠짐 260ms, 뒤 카드 올라옴 380ms → 620ms에 앞뒤 교체. 전환 중 탭은 무시
   function peel() {
-    if (phase !== 'idle' || (!current && !coverOn)) return;
+    if (phase !== 'idle' || !current) return;
+    hideUndo();
     if (reduceMotion.matches) return swapToNext();
     const gen = ++peelGen;
     setPhase('peel');
@@ -438,7 +536,6 @@
   const ready = () => !!current && phase === 'idle';
   const dwell = () => Date.now() - shownAt;
   function onSkip() {
-    if (coverOn) return peel();
     if (!ready()) return;
     hideCoach();
     if (me) record(current, 'skip', -0.15, dwell()); else maybeNudge();
@@ -463,9 +560,72 @@
   function onDislike() {
     if (!ready()) return;
     if (!me) return askLogin('dislike');
-    disliked.add(current.id);
-    record(current, 'dislike', -1, dwell());
-    peel();
+    const f = current;
+    disliked.add(f.id);
+    record(f, 'dislike', -1, dwell());
+    lastDislike = f;
+    navigator.vibrate?.(10);
+    nope();
+  }
+  // 별로예요 (5-8): 도장 → 왼쪽으로 빠짐 → 되돌리기 토스트. 다음 상품의 위쪽 Peel과 반대 방향
+  function nope() {
+    hideUndo(true);
+    if (reduceMotion.matches) { swapToNext(); return showUndo(); }
+    const gen = ++peelGen, btn = $('btn-dislike');
+    btn.classList.add('press');
+    setTimeout(() => btn.classList.remove('press'), 180);
+    setPhase('nope');
+    setTimeout(() => { if (gen === peelGen) setPhase('nope-exit'); }, 240);
+    setTimeout(() => {
+      if (gen !== peelGen) return;
+      setPhase('reset');
+      swapToNext();
+      void $('viewer').offsetWidth;
+      setPhase('idle');
+      showUndo();
+    }, 680);
+  }
+  let lastDislike = null, undoTimer = 0;
+  function showUndo() {
+    $('undo-toast').classList.add('on');
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(hideUndo, 4000);
+  }
+  function hideUndo(keep) {
+    clearTimeout(undoTimer);
+    $('undo-toast').classList.remove('on');
+    if (keep !== true) lastDislike = null;
+  }
+  $('undo-btn').addEventListener('click', e => { e.stopPropagation(); undoDislike(); });
+  function undoDislike() {
+    const f = lastDislike;
+    if (!f || phase !== 'idle') return;
+    hideUndo();
+    disliked.delete(f.id);
+    record(f, 'undislike', 1);
+    // 지금 상품은 다시 뒤 카드로, 그 뒤 상품은 예비로 돌린다
+    spare = nextItem;
+    nextItem = current;
+    fillBody(bodyBack, f);
+    const front = bodyBack, back = bodyFront;
+    $('front-face').prepend(front);
+    $('shell-back').append(back);
+    bodyFront = front;
+    bodyBack = back;
+    $('shell-back').hidden = false;
+    back.querySelector('.tags').classList.remove('play');
+    current = f;
+    shownAt = Date.now();
+    shownCount = Math.max(1, shownCount - 1);
+    paintSeq();
+    setLikeBtn(likes.includes(f.id));
+    saveResume();
+    if (reduceMotion.matches) return;
+    const gen = ++peelGen;
+    setPhase('undo-pre');
+    void $('viewer').offsetWidth;
+    setPhase('undo');
+    setTimeout(() => { if (gen === peelGen) setPhase('idle'); }, 460);
   }
   let buyTimer;
   function onBuy() {
@@ -531,51 +691,64 @@
     $('ob-count').textContent = n ? `지금 조건에 맞는 상품 ${n.toLocaleString()}개${fresh ? ` · 2주 안에 나온 신상 ${fresh.toLocaleString()}개` : ''}` : (s.cats.length ? COPY.priceNone : COPY.pickCategory);
     $('start').disabled = !n;
   }
-  // 가격: 슬라이더(자주 쓰는 구간으로 빠르게) + 직접 입력(1만원 단위로 자유롭게)
-  const PRICE_STOPS = [0, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70, 85, 100, 120, 150, 200, 250, 300, 400, 500];   // 만원, 마지막 칸 = 제한 없음
-  const STOP_LAST = PRICE_STOPS.length - 1;
+  // 가격 (4-10): 0~200만 원, 1만 원 단위. 200 = 상한 없음. 입력칸은 칸을 벗어날 때 반영
+  const PR_MAX = 200;
   const prLo = $('pr-lo'), prHi = $('pr-hi'), prMin = $('price-min'), prMax = $('price-max'), prBox = $('pr-slider');
-  prLo.max = prHi.max = STOP_LAST;
-  prMax.placeholder = COPY.priceNoLimit;
-  const nearestStop = man => PRICE_STOPS.reduce((best, v, i) => (Math.abs(v - man) < Math.abs(PRICE_STOPS[best] - man) ? i : best), 0);
-  function paintRange() {
-    const a = +prLo.value, b = +prHi.value;
-    prBox.style.setProperty('--a', (a / STOP_LAST * 100) + '%');
-    prBox.style.setProperty('--b', (b / STOP_LAST * 100) + '%');
-    prLo.style.zIndex = a >= STOP_LAST - 1 ? 3 : 1;            // 두 손잡이가 오른쪽 끝에서 겹쳐도 왼쪽 손잡이를 잡을 수 있게
+  const priceUI = { lo: 0, hi: PR_MAX };
+  const wonText = v => (v >= PR_MAX ? `${PR_MAX}만 원 이상` : `${v}만 원`);
+  function paintPrice() {
+    const { lo, hi } = priceUI;
+    prLo.value = lo; prHi.value = hi;
+    prMin.value = lo; prMax.value = hi;
+    prBox.style.setProperty('--a', (lo / PR_MAX * 100) + '%');
+    prBox.style.setProperty('--b', (hi / PR_MAX * 100) + '%');
+    prLo.style.zIndex = lo >= PR_MAX - 1 ? 3 : 1;             // 두 손잡이가 오른쪽 끝에서 겹쳐도 왼쪽 손잡이를 잡을 수 있게
+    prLo.setAttribute('aria-valuetext', wonText(lo));
+    prHi.setAttribute('aria-valuetext', wonText(hi));
+    $('pr-max-unit').textContent = hi >= PR_MAX ? COPY.priceUnitTop : COPY.priceUnit;
+    $('pr-sum').textContent = priceText(readPrice()) || COPY.priceAll;
   }
+  const clampMan = v => Math.max(0, Math.min(PR_MAX, Math.round(v)));
   function setPriceUI([lo, hi]) {
-    prMin.value = lo ? lo / 10000 : '';
-    prMax.value = hi === null ? '' : hi / 10000;
-    prLo.value = nearestStop((lo || 0) / 10000);
-    prHi.value = hi === null ? STOP_LAST : Math.max(+prLo.value + 1, nearestStop(hi / 10000));
-    paintRange();
+    priceUI.lo = clampMan((lo || 0) / 10000);
+    priceUI.hi = hi === null ? PR_MAX : clampMan(hi / 10000);
+    if (priceUI.lo > priceUI.hi) priceUI.lo = priceUI.hi;
+    paintPrice();
   }
-  function readPrice() {
-    const lo = Math.max(0, Math.round(+prMin.value || 0));
-    const text = prMax.value.trim();
-    return [lo * 10000, text === '' ? null : Math.max(0, Math.round(+text)) * 10000];
-  }
+  function readPrice() { return [priceUI.lo * 10000, priceUI.hi >= PR_MAX ? null : priceUI.hi * 10000]; }
   let priceFrame = 0;
-  const priceChanged = () => { if (!priceFrame) priceFrame = requestAnimationFrame(() => { priceFrame = 0; updateCount(); }); };
-  prLo.addEventListener('input', () => {
-    if (+prLo.value >= +prHi.value) prLo.value = +prHi.value - 1;
-    prMin.value = +prLo.value ? PRICE_STOPS[+prLo.value] : '';
-    paintRange(); priceChanged();
-  });
-  prHi.addEventListener('input', () => {
-    if (+prHi.value <= +prLo.value) prHi.value = +prLo.value + 1;
-    prMax.value = +prHi.value === STOP_LAST ? '' : PRICE_STOPS[+prHi.value];
-    paintRange(); priceChanged();
-  });
-  for (const el of [prMin, prMax]) {
-    el.addEventListener('input', () => { const [lo, hi] = readPrice(); prLo.value = nearestStop(lo / 10000); prHi.value = hi === null ? STOP_LAST : nearestStop(hi / 10000); paintRange(); priceChanged(); });
-    el.addEventListener('change', () => {                       // 입력을 마쳤을 때 최소 > 최대면 서로 바꿔 준다
-      const [lo, hi] = readPrice();
-      setPriceUI(hi !== null && hi < lo ? [hi, lo] : [lo, hi]);
-      updateCount();
-    });
+  const priceChanged = () => { paintPrice(); if (!priceFrame) priceFrame = requestAnimationFrame(() => { priceFrame = 0; updateCount(); }); };
+  function setHandle(which, v) {
+    if (which === 'lo') priceUI.lo = Math.min(clampMan(v), priceUI.hi); else priceUI.hi = Math.max(clampMan(v), priceUI.lo);
+    priceChanged();
   }
+  prLo.addEventListener('input', () => setHandle('lo', +prLo.value));
+  prHi.addEventListener('input', () => setHandle('hi', +prHi.value));
+  for (const [el, which] of [[prLo, 'lo'], [prHi, 'hi']]) el.addEventListener('keydown', e => {       // Shift + 화살표 = 10만 원
+    if (!e.shiftKey || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    setHandle(which, priceUI[which] + (e.key === 'ArrowLeft' ? -10 : 10));
+  });
+  // 줄을 누르면 가까운 손잡이가 그 자리로
+  let prDrag = null;
+  const prValue = e => { const r = prBox.getBoundingClientRect(), pad = 14; return clampMan((e.clientX - r.left - pad) / Math.max(1, r.width - pad * 2) * PR_MAX); };
+  prBox.addEventListener('pointerdown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    const v = prValue(e), { lo, hi } = priceUI;
+    prDrag = Math.abs(v - lo) < Math.abs(v - hi) || (lo === hi && v < lo) ? 'lo' : 'hi';
+    prBox.setPointerCapture(e.pointerId);
+    setHandle(prDrag, v);
+  });
+  prBox.addEventListener('pointermove', e => { if (prDrag) setHandle(prDrag, prValue(e)); });
+  for (const t of ['pointerup', 'pointercancel']) prBox.addEventListener(t, () => { prDrag = null; });
+  for (const el of [prMin, prMax]) el.addEventListener('change', () => {
+    const read = (input, prev) => { const t = input.value.replace(/[^0-9]/g, ''); return t === '' ? prev : clampMan(+t); };
+    let lo = read(prMin, priceUI.lo), hi = read(prMax, priceUI.hi);
+    if (lo > hi) [lo, hi] = [hi, lo];
+    priceUI.lo = lo; priceUI.hi = hi;
+    paintPrice();
+    updateCount();
+  });
 
   // PC 시작 화면 오른쪽: 신상품·콜라보 위주로 6장 (넓은 화면에서만 보임)
   function renderArt() {
@@ -619,13 +792,20 @@
     });
   });
   $('start').addEventListener('click', () => {
-    session.set(COVER_KEY);                  // 처음 설정을 마친 직후에는 표지를 보여 주지 않는다
     settings = readOnboard();
     store.set('settings', settings);
     store.set('settingsV', SETTINGS_VERSION);
     persist();
-    if (editing) { editing = false; dropLayer('settings'); }
-    showFeed();
+    resumeN = 0;
+    store.set('resume', 0);
+    deckReady = false;
+    if (!editing) return enterApp();
+    editing = false;
+    dropLayer('settings');
+    backToFeed();
+    refreshTotal();
+    renderHome();
+    if (view === 'tap') openDeck();
   });
 
   // ---------- 화면 쌓기: 휴대폰 '뒤로' 버튼·제스처로 설정 화면과 시트를 닫는다 ----------
@@ -641,7 +821,8 @@
   window.addEventListener('popstate', () => {
     if (skipPop) { skipPop = false; return; }
     const top = layers.pop();
-    if (top) top.close();
+    if (top) return top.close();
+    if (view === 'tap' || navBusy) goHome(true);  // 태핑에서 뒤로 = 홈 (5-7), 전환 중이면 끝난 뒤 처리
   });
 
   // 피드에서 조절 버튼 → 설정 바꾸기 (뒤로 가면 보던 상품 그대로)
@@ -659,15 +840,6 @@
   }
   $('ob-back').addEventListener('click', () => { dropLayer('settings'); backToFeed(); });
 
-  function showFeed(withCover) {
-    $('onboard').hidden = true;
-    $('feed').hidden = false;
-    poolTotal = FEED.filter(f => matches(f, settings)).length;
-    shownCount = 0;
-    if (withCover) startCover(); else startDeck();
-    $('coach').textContent = finePointer ? '사진을 클릭하면 다음 상품' : '빈 곳을 탭하면 다음 상품';
-    if (store.get('coachDone', false)) hideCoach(); else setTimeout(hideCoach, 3500);
-  }
   function showOnboard() {
     const edit = editing && !!settings;        // 처음 시작이 아니라 설정을 바꾸러 온 경우
     $('onboard').classList.toggle('is-edit', edit);
@@ -955,6 +1127,7 @@
     b.setAttribute('aria-label', me ? '내 계정' : '로그인');
     $('acct-initial').textContent = me ? initial(me.email) : '';
     $('ob-login').hidden = !!me || !acct.ready;
+    if (settings && !$('feed').hidden) renderHome();
   }
 
   $('auth-form').addEventListener('submit', async e => {
@@ -1018,13 +1191,21 @@
   // ---------- 이벤트 연결 ----------
   let suppressClick = false;               // 당기기 직후의 클릭은 '다음'으로 치지 않음
   $('stage').addEventListener('click', () => { if (suppressClick) { suppressClick = false; return; } onSkip(); });
-  $('reshuffle').addEventListener('click', () => { seen.clear(); store.set('seen', []); shownCount = 0; startDeck(); });
+  $('reshuffle').addEventListener('click', () => { seen.clear(); store.set('seen', []); shownCount = 0; saveResume(); startDeck(); });
   $('see-likes').addEventListener('click', openLikes);
   $('empty-go').addEventListener('click', () => closeSheet('likes'));
   $('btn-like').addEventListener('click', onLike);
   $('btn-dislike').addEventListener('click', onDislike);
   $('btn-buy').addEventListener('click', onBuy);
   $('open-likes').addEventListener('click', openLikes);
+  $('tab-like').addEventListener('click', openLikes);
+  $('tab-home').addEventListener('click', () => goHome());
+  $('tab-deck').addEventListener('click', () => goTap());
+  $('logo-home').addEventListener('click', () => goHome());
+  $('today-hit').addEventListener('click', () => goTap());
+  $('hm-change').addEventListener('click', openSettings);
+  $('hm-all').addEventListener('click', openLikes);
+  $('likes').addEventListener('close', () => { if (!$('feed').hidden) renderHome(); });
   $('close-likes').addEventListener('click', () => closeSheet('likes'));
   $('open-settings').addEventListener('click', openSettings);
   $('open-account').addEventListener('click', () => openAuth());
@@ -1177,6 +1358,8 @@
     if ($('auth').open || $('likes').open) return;                        // 시트가 열려 있으면 Esc는 시트가 처리
     if ($('feed').hidden) { if (e.key === 'Escape' && editing) $('ob-back').click(); return; }
     if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (view !== 'tap') return;
+    if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); return goHome(); }
     if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); onSkip(); }
     else if (e.key.toLowerCase() === 'l') onLike();
     else if (e.key.toLowerCase() === 'd') onDislike();
@@ -1188,7 +1371,7 @@
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-      for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed);
+      if (view === 'tap') relayoutDeck();
     }, 120);
   });
 
@@ -1204,11 +1387,7 @@
     }
     updateAccountUI();
     updateLikeCount();
-    if (settings) {
-      const firstInTab = !session.get(COVER_KEY);    // 앱 실행·새 탭에서만 표지 (같은 탭 새로고침·판매처 복귀는 제외)
-      session.set(COVER_KEY);
-      showFeed(firstInTab);
-    } else showOnboard();
+    if (settings) enterApp(); else showOnboard();
     $('boot').classList.add('done');
     setTimeout(() => $('boot').remove(), 400);
   }

@@ -78,18 +78,19 @@
         </div>
       </fieldset>
 
-      <fieldset class="q">
-        <legend>가격 <span class="hint" data-copy="priceHint"></span></legend>
+      <fieldset class="q q--price">
+        <legend class="pr-head"><span data-copy="priceTitle">가격</span><span class="hint" data-copy="priceHint"></span><span class="pr-sum" id="pr-sum"></span></legend>
         <div class="pr-fields">
-          <label class="pr-field"><input id="price-min" type="number" inputmode="numeric" min="0" step="1" placeholder="0" aria-label="최소 가격 (만원)"><em data-copy="priceUnit"></em></label>
+          <label class="pr-field"><b data-copy="priceMin"></b><input id="price-min" type="text" inputmode="numeric" autocomplete="off" aria-label="최소 가격 (만원)"><em data-copy="priceUnit"></em></label>
           <span class="pr-dash" aria-hidden="true">~</span>
-          <label class="pr-field"><input id="price-max" type="number" inputmode="numeric" min="0" step="1" aria-label="최대 가격 (만원)"><em data-copy="priceUnit"></em></label>
+          <label class="pr-field"><b data-copy="priceMax"></b><input id="price-max" type="text" inputmode="numeric" autocomplete="off" aria-label="최대 가격 (만원)"><em id="pr-max-unit"></em></label>
         </div>
         <div class="pr-slider" id="pr-slider">
           <div class="pr-track"></div>
-          <input id="pr-lo" type="range" min="0" step="1" value="0" aria-label="최소 가격">
-          <input id="pr-hi" type="range" min="0" step="1" value="21" aria-label="최대 가격">
+          <input id="pr-lo" type="range" min="0" max="200" step="1" value="0" aria-label="최소 가격">
+          <input id="pr-hi" type="range" min="0" max="200" step="1" value="200" aria-label="최대 가격">
         </div>
+        <div class="pr-ticks" aria-hidden="true"><span>0</span><span>50만</span><span>100만</span><span>150만</span><span>200만+</span></div>
       </fieldset>
 
       <!-- 화면 모드 (4-8): 설정 바꾸기에서만, 적용하기 없이 누르는 즉시 바뀜 -->
@@ -115,7 +116,7 @@
   <!-- 2. 피드 -->
   <section class="screen feed" id="feed" hidden aria-label="상품 피드">
     <header class="topbar">
-      <span class="wordmark" role="img" aria-label="tapping"><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path class="lg-b" d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="lg-f" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg>tapping</span>
+      <button class="logo-btn" id="logo-home" type="button" aria-label="tapping 홈으로"><svg class="ico logo-back" data-i="chevron-left" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#chevron-left"/></svg><span class="wordmark"><svg class="lg" viewBox="0 0 100 100" aria-hidden="true"><path class="lg-b" d="M32 10H68A22 22 0 0 1 90 32V52L52 90H32A22 22 0 0 1 10 68V32A22 22 0 0 1 32 10Z"/><path class="lg-f" d="M90 52H74A22 22 0 0 0 52 74V90Z"/></svg>tapping</span></button>
       <div class="top-actions">
         <button class="icon-btn" id="open-likes" type="button" aria-label="찜 목록">
           <svg class="ico" data-i="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg>
@@ -137,6 +138,33 @@
       <button class="n-close" id="nudge-close" type="button" aria-label="닫기"><svg class="ico" data-i="close" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#close"/></svg></button>
     </div>
 
+    <div class="views">
+    <!-- 홈 (4-9): 오늘 카드 + 오늘 들어온 상품 + 찜한 상품 -->
+    <section class="home" id="home" aria-label="홈">
+      <article class="today" id="today" data-fold="on">
+        <button class="today__hit" id="today-hit" type="button"></button>
+        <div class="today__face">
+          <span class="today__label" id="hm-label"></span>
+          <div class="today__main" id="hm-main"><span class="today__n" id="hm-n"></span><span class="today__s" data-copy="homeNew"></span></div>
+          <div class="today__zero" id="hm-zero" hidden><span class="today__zt" data-copy="homeZero"></span><span class="today__zs" id="hm-zs"></span></div>
+          <span class="today__go"><svg class="today__ic" data-i="arrow-right" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#arrow-right"/></svg><span id="hm-status"></span></span>
+          <div class="today__rule"></div>
+          <div class="today__set"><svg class="today__ic2" data-i="sliders" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#sliders"/></svg><span class="today__sum" id="hm-set"></span><button class="today__change" id="hm-change" type="button" data-copy="homeChange"></button></div>
+        </div>
+        <span class="today__flap" aria-hidden="true"><i></i></span>
+      </article>
+      <div class="home__lists" id="home-lists">
+        <section class="hsec">
+          <header class="hsec__head"><h2 class="hsec__t" id="hm-list-title"></h2><span class="hsec__n" id="hm-list-count"></span></header>
+          <div class="hrow" id="hm-new"></div>
+        </section>
+        <section class="hsec">
+          <header class="hsec__head"><h2 class="hsec__t" data-copy="homeLikes"></h2><button class="hsec__all" id="hm-all" type="button" data-copy="homeLikesAll"></button></header>
+          <div id="hm-likes"></div>
+        </section>
+      </div>
+    </section>
+
     <main class="viewer" id="viewer" data-phase="idle">
       <!-- 당겨서 새로 섞기 (터치) -->
       <div class="pull" aria-hidden="true">
@@ -149,17 +177,10 @@
         <article class="pcard back" id="shell-back" aria-hidden="true"></article>
         <article class="front" id="shell-front">
           <div class="face" id="front-face">
-          <!-- 표지 카드 (4-7): 앱을 새로 열면 덱 맨 앞에 한 장, 탭하면 Peel로 첫 상품 -->
-          <div class="cover" id="cover" hidden>
-            <span class="cover__label" id="cv-label"></span>
-            <div class="cover__main" id="cv-main"><span class="cover__n" id="cv-n"></span><span class="cover__s" id="cv-s"></span></div>
-            <div class="cover__zero" id="cv-zero" hidden><span class="cover__zt" id="cv-zt"></span><span class="cover__zs" id="cv-zs"></span></div>
-            <div class="cover__rule"></div>
-            <div class="cover__set"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#sliders"/></svg><span id="cv-set"></span></div>
-          </div>
           <div class="hit" id="stage" role="button" tabindex="0" aria-label="다음 상품 보기"></div>
           <span class="next-cue" data-theme="light" aria-hidden="true"><svg class="ico" data-i="arrow-right" viewBox="0 0 24 24"><use href="brand/icons/sprite.svg#arrow-right"/></svg></span>
-          <p class="coach" id="coach" data-theme="light"></p>
+          <p class="coach" id="coach"></p>
+          <span class="nope-stamp" aria-hidden="true"><svg class="nope-ic" data-i="thumbs-down" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#thumbs-down"/></svg><span data-copy="nopeStamp"></span></span>
           <div class="actions" id="actions" aria-label="상품 반응">
             <button class="act like" id="btn-like" type="button" aria-label="찜하기 (L)" title="찜하기 (L)" aria-pressed="false">
               <svg class="ico" data-i="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg>
@@ -174,7 +195,8 @@
           <span class="peel peel--flap" aria-hidden="true"><i></i></span>
           </div>
         </article>
-        <div class="buy-toast" id="buy-toast" data-theme="light" role="status" hidden>
+        <div class="undo-toast" id="undo-toast" role="status" aria-live="polite"><svg class="undo-ic" data-i="thumbs-down" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#thumbs-down"/></svg><span data-copy="nopeToast"></span><button class="undo-btn" id="undo-btn" type="button" data-copy="nopeUndo"></button></div>
+        <div class="buy-toast" id="buy-toast" role="status" hidden>
           <svg class="ico" data-i="external" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#external"/></svg>
           <span data-copy="buyToast"></span>
         </div>
@@ -191,6 +213,15 @@
         </div>
       </div>
     </main>
+    </div>
+
+    <!-- 하단 바 (4-11, 모바일) -->
+    <nav class="tabbar" id="tabbar" aria-label="화면 이동">
+      <span class="tab-ind" aria-hidden="true"></span>
+      <button class="tab" id="tab-home" type="button" aria-label="홈"><svg class="ico" data-i="home" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#home"/></svg></button>
+      <button class="tab" id="tab-deck" type="button" aria-label="태핑"><svg class="ico" data-i="deck" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#deck"/></svg></button>
+      <button class="tab" id="tab-like" type="button" aria-label="찜 목록"><svg class="ico" data-i="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#heart"/></svg></button>
+    </nav>
     <p class="sr-only" id="sr-now" aria-live="polite"></p>
   </section>
 

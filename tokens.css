@@ -210,6 +210,8 @@
   --tp-toast-bg: light-dark(#0a0a0a, #f4f4f0);    /* 떠 있는 중립 요소(토스트·안내·선택된 칩): 다크는 밝은 면으로 반전 */
   --tp-toast-fg: light-dark(#ffffff, #0a0a0a);
   --tp-toast-ic: light-dark(#d4ff3a, #0a0a0a);
+  --tp-toast-sh: light-dark(rgb(10 10 10 / .18), rgb(0 0 0 / .35));
+  --tp-shadow-toast: 0 8px 24px var(--tp-toast-sh);
   --tp-admin-bg: light-dark(#0a0a0a, #242424);
   --tp-admin-fg: light-dark(#ffffff, #f4f4f0);
 
@@ -229,7 +231,7 @@
   --tp-state-btn: light-dark(#ffffff, #1c1c1c);    /* 빈 화면 보조 버튼 */
   --tp-state-art: 160px;   --tp-state-text: 270px;   --tp-state-btn-w: 220px;
 
-  --tp-photo-h: 440px;     /* 카드 사진 칸 */
+  --tp-info-h: 276px;      /* 카드에서 정보 칸 높이: 사진 칸 = 카드 높이 − 이 값 */
   --tp-shadow-buy: 0 2px 10px rgb(10 10 10 / .08);   /* 구매 버튼 */
   --tp-state-btn-c: light-dark(rgb(10 10 10 / .06), transparent);
   --tp-shadow-state-btn: 0 1px 2px var(--tp-state-btn-c), 0 2px 10px var(--tp-state-btn-c);
@@ -250,16 +252,36 @@
 
   /* 가격 범위 슬라이더 */
   --tp-range-thumb: 28px;   --tp-range-track: 4px;
+  --tp-range-bg: light-dark(#e5e5e0, #242424);
+  --tp-range-fill: light-dark(#0a0a0a, #d4ff3a);
+  --tp-ring-buy-fixed: rgb(10 10 10 / .14);
+  --tp-range-sh: light-dark(rgb(10 10 10 / .18), rgb(0 0 0 / .5));
 
-  /* 표지 카드 (4-7): 휴대폰 402 기준, 작은 휴대폰·PC는 아래 @media */
-  --tp-cv-pad: 28px;   --tp-cv-label: 13px;
-  --tp-cv-n3: 136px;   --tp-cv-n4: 112px;   --tp-cv-n5: 92px;
-  --tp-cv-sent: 30px;  --tp-cv-zero: 40px;  --tp-cv-zero-sub: 17px;
-  --tp-cv-line-t: 24px; --tp-cv-line-b: 20px;
-  --tp-cv-set: 15px;   --tp-cv-set-ic: 18px; --tp-cv-set-r: 88px;
-  --tp-cv-fold: 72px;  --tp-cv-fold-up: 90px; --tp-cv-fold-go: 104px;
-  --tp-cv-tilt: 18px;
+  /* 하단 바 (4-11) */
+  --tab-b: 22px;   --tab-h: 48px;   --tab-w: 64px;   --tab-gap: 10px;
+  --tab-bg: light-dark(#ffffff, #141414);
+  --tab-on: light-dark(#ebebe6, #242424);
+  --tab-ring: light-dark(transparent, #262626);
+  --tab-c1: light-dark(rgb(10 10 10 / .06), transparent);
+  --tab-c2: light-dark(rgb(10 10 10 / .12), rgb(0 0 0 / .5));
+  --tab-shadow: inset 0 0 0 1px var(--tab-ring), 0 1px 2px var(--tab-c1), 0 8px 24px var(--tab-c2);
+
+  /* 홈 (4-9): 휴대폰 402 기준, 작은 휴대폰·PC는 아래 @media */
+  --tp-hm-card: 344px;  --tp-hm-pad: 24px;   --tp-hm-label: 13px;
+  --tp-hm-n3: 112px;    --tp-hm-n4: 92px;    --tp-hm-n5: 76px;
+  --tp-hm-sent: 26px;   --tp-hm-zero: 32px;  --tp-hm-zero-sub: 15px;
+  --tp-hm-go: 14px;     --tp-hm-line: 20px;  --tp-hm-set: 15px;
+  --tp-hm-fold: 72px;   --tp-hm-fold-up: 90px;  --tp-hm-fold-go: 104px;
+  --tp-hm-title: 17px;  --tp-hm-sec: 24px;
+  --tp-hm-tw: 82px;     --tp-hm-th: 104px;   --tp-hm-tg: 8px;   --tp-hm-sq: 64px;
+  --tp-hm-more: light-dark(#ebebe6, #1b1b1b);
   --tp-dur-fold: 300ms;
+  --tp-dur-bar: 300ms;          /* 하단 바 선택 표시, 뒤로 화살표 폭, 되돌리기 토스트 등장 */
+  --tp-dur-fade: 200ms;         /* 도장 등장, 목록 퇴장, 덱 페이드 */
+  --tp-dur-fade-2: 240ms;       /* 홈으로 돌아올 때 페이드 */
+  --tp-dur-fade-3: 120ms;       /* 도장 페이드 */
+  --tp-dur-rise: 420ms;         /* 홈으로 돌아올 때, 되돌리기 */
+  --tp-dur-nope-exit: 280ms;
 
   /* Peel 전환 (약 620ms, 브랜드 시그니처로 승인된 예외) */
   --tp-peel: 104px;
@@ -272,14 +294,14 @@
   --ease-icon: cubic-bezier(.33, 1, .68, 1);
 }
 @media (prefers-reduced-motion: reduce) {
-  :root { --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; --tp-dur-fold: 1ms; }
+  :root { --tp-dur-bar: 1ms; --tp-dur-fade: 1ms; --tp-dur-fade-2: 1ms; --tp-dur-fade-3: 1ms; --tp-dur-rise: 1ms; --tp-dur-nope-exit: 1ms; --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; --tp-dur-fold: 1ms; }
 }
 
 @media (max-width: 379px), (max-height: 640px) {
-  :root { --tp-cv-pad: 24px; --tp-cv-label: 12px; --tp-cv-n3: 112px; --tp-cv-n4: 96px; --tp-cv-n5: 76px; --tp-cv-sent: 26px; --tp-cv-zero: 34px; --tp-cv-zero-sub: 15px; --tp-cv-line-t: 20px; --tp-cv-line-b: 16px; --tp-cv-set: 14px; --tp-cv-set-ic: 17px; --tp-cv-set-r: 80px; --tp-cv-fold: 64px; --tp-cv-fold-up: 80px; --tp-cv-fold-go: 92px; }
+  :root { --tab-b: 12px; --tab-gap: 0px; --tp-hm-card: 296px; --tp-hm-pad: 20px; --tp-hm-label: 12px; --tp-hm-n3: 92px; --tp-hm-n4: 76px; --tp-hm-n5: 64px; --tp-hm-sent: 22px; --tp-hm-zero: 28px; --tp-hm-zero-sub: 14px; --tp-hm-go: 13px; --tp-hm-line: 16px; --tp-hm-set: 14px; --tp-hm-fold: 64px; --tp-hm-fold-up: 80px; --tp-hm-fold-go: 92px; --tp-hm-tw: 72px; --tp-hm-th: 92px; --tp-hm-sq: 56px; }
 }
 @media (min-width: 1024px) {
-  :root { --tp-cv-pad: 56px; --tp-cv-label: 15px; --tp-cv-n3: 240px; --tp-cv-n4: 200px; --tp-cv-n5: 168px; --tp-cv-sent: 48px; --tp-cv-zero: 64px; --tp-cv-zero-sub: 20px; --tp-cv-line-t: 32px; --tp-cv-line-b: 24px; --tp-cv-set: 17px; --tp-cv-set-ic: 20px; --tp-cv-set-r: 112px; --tp-cv-fold: 96px; --tp-cv-fold-up: 120px; --tp-cv-fold-go: 136px; }
+  :root { --tp-hm-pad: 48px; --tp-hm-label: 15px; --tp-hm-n3: 200px; --tp-hm-n4: 168px; --tp-hm-n5: 140px; --tp-hm-sent: 40px; --tp-hm-zero: 56px; --tp-hm-zero-sub: 18px; --tp-hm-go: 16px; --tp-hm-line: 28px; --tp-hm-set: 17px; --tp-hm-fold: 96px; --tp-hm-fold-up: 120px; --tp-hm-fold-go: 136px; --tp-hm-title: 20px; --tp-hm-sec: 40px; --tp-hm-tw: 128px; --tp-hm-th: 160px; --tp-hm-tg: 12px; --tp-hm-sq: 88px; }
 }
 
 /* ---------- 5. v1.0 이름 호환 (기존 화면이 깨지지 않게) ---------- */
