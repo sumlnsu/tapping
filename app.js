@@ -61,11 +61,9 @@
   }
   // box: 사진 칸(배경색 담당), img의 부모 .pic: 내용 영역. fill: 상품이 채울 비율, aspect: 칸 가로/세로(모르면 실제 크기로)
   function layoutPhoto(box, img, f, fill, aspect) {
-    const theme = document.documentElement.dataset.theme, dark = theme ? theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-    // 누끼가 손상된 상품은 흰 칸에서는 티가 안 나지만 어두운 칸에서는 찢어져 보이므로 다크에서는 원본 사진으로
-    const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail' && !(dark && f.cut[5]));
+    const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail');
     box.classList.toggle('is-cut', cut);
-    if (cut) delete box.dataset.theme; else box.dataset.theme = 'light';   // 누끼는 카드와 같은 면(다크면 어둡게), 원본 사진은 사진 배경색을 지켜 밝게
+    box.dataset.theme = 'light';            // 사진 칸은 다크 모드에서도 항상 흰색
     box.style.backgroundColor = cut || !f ? '' : f.bg;
     if (!cut) { img.removeAttribute('style'); return; }
     const pic = img.parentElement;
@@ -499,7 +497,6 @@
       pic.appendChild(img);
       fig.appendChild(pic);
       art.appendChild(fig);
-      fig._f = f;
       layoutPhoto(fig, img, f, FILL.art, 0.78);                   // 4:5 칸
       preloadMask(f, () => layoutPhoto(fig, img, f, FILL.art, 0.78));
     });
@@ -1022,11 +1019,6 @@
   // 화면 모드 (4-8): 다크(기본) / 라이트 / 시스템, 기기에 저장하고 누르는 즉시 적용
   const THEME_KEY = 'tapping.theme';
   const readTheme = () => { try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'system' ? t : 'dark'; } catch { return 'dark'; } };
-  function afterThemeChange() {
-    inlineStateArt();
-    for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed);
-    document.querySelectorAll('#ob-art figure').forEach(fig => { if (fig._f) layoutPhoto(fig, fig.querySelector('img'), fig._f, FILL.art, 0.78); });
-  }
   const syncThemeColor = () => { document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.body).backgroundColor; };
   function paintThemeSeg() { const t = readTheme(); $('theme-seg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t))); }
   function setTheme(t) {
@@ -1035,7 +1027,7 @@
     root.classList.add('theme-fade');
     if (t === 'system') delete root.dataset.theme; else root.dataset.theme = t;
     paintThemeSeg();
-    afterThemeChange();
+    inlineStateArt();
     setTimeout(() => { root.classList.remove('theme-fade'); syncThemeColor(); }, 260);
   }
   $('theme-seg').addEventListener('click', e => {
@@ -1047,7 +1039,7 @@
     void moon.getBoundingClientRect();
     moon.classList.add('play');
   });
-  darkScheme.addEventListener('change', () => { if (readTheme() === 'system') { afterThemeChange(); syncThemeColor(); } });
+  darkScheme.addEventListener('change', () => { if (readTheme() === 'system') { inlineStateArt(); syncThemeColor(); } });
   paintThemeSeg();
   syncThemeColor();
 
