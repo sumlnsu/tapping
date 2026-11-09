@@ -150,7 +150,7 @@ button { cursor: pointer; }
 
 /* 카드 정보 (4-1): 큰 브랜드명, 자간을 넓힌 작은 대문자 라벨 */
 .info { display: flex; flex-direction: column; gap: 6px; }
-.pbody .info { flex: none; padding: var(--s-1) var(--s-9) var(--s-3) var(--s-5); }
+.pbody .info { flex: none; padding: var(--s-4) var(--s-9) var(--s-3) var(--s-5); }   /* 흰 사진 칸과 배지 사이 16 */
 .tags { display: flex; gap: 6px; min-height: var(--tp-badge-h); }
 .mall { margin: 0; overflow: hidden; color: var(--c-muted); font: 700 var(--tp-t-micro)/normal var(--f-sans); letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .brand { display: -webkit-box; margin: 0; overflow: hidden; color: var(--c-ink); font: 800 var(--tp-t-brand)/1.1 var(--f-sans); letter-spacing: var(--tp-tr-logo); -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
