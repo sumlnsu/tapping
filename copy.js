@@ -15,5 +15,18 @@ window.TAPPING_COPY = {
 
   pullMore: '조금 더 당겨 주세요',
   pullRelease: '놓으면 새로 섞어요',
-  pullBusy: '새로 섞는 중'
+  pullBusy: '새로 섞는 중',
+
+  coverLabel: (m, d) => `${m}월 ${d}일 · 오늘의 태핑`,
+  coverNew: '새로 들어왔어요',
+  coverZero: '오늘은 새 상품이\n없어요',
+  coverRecent: n => `최근 2주 신상 ${n}개`,
+  coverAll: '전체 상품',
+  coverAria: n => `오늘 새 상품 ${n}개. 탭하면 첫 상품으로 넘어가요`,
+
+  themeTitle: '화면 모드',
+  themeHint: '누르면 바로 바뀌어요',
+  themeDark: '다크',
+  themeLight: '라이트',
+  themeSystem: '시스템'
 };

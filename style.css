@@ -55,7 +55,8 @@ button { cursor: pointer; }
 .ob-back { margin-left: calc(var(--s-3) * -1); width: var(--hit); height: var(--hit); color: var(--c-ink); }
 .ob-back svg { width: var(--s-5); height: var(--s-5); }
 .ob-edit-title { display: none; margin: 0; color: var(--c-ink); font: 750 var(--t-h2)/1.2 var(--f-sans); letter-spacing: -.02em; }
-.onboard.is-edit .ob-top { position: sticky; top: 0; z-index: 2; margin: calc(max(var(--s-6), env(safe-area-inset-top)) * -1) calc(var(--s-5) * -1) 0; padding: max(var(--s-3), env(safe-area-inset-top)) var(--s-5) var(--s-2); background: var(--c-glass); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+.onboard.is-edit .ob-top { position: sticky; top: 0; z-index: 2; margin: calc(max(var(--s-6), env(safe-area-inset-top)) * -1) calc(var(--s-5) * -1) 0; padding: max(var(--s-3), env(safe-area-inset-top)) var(--s-5) var(--s-2); background: var(--c-surface); box-shadow: 0 1px 0 var(--c-line); }
+.onboard.is-edit .ob-main { gap: var(--s-5); }
 .onboard.is-edit .ob-logo, .onboard.is-edit .ob-hero, .onboard.is-edit .ob-head .lead { display: none; }
 .onboard.is-edit .ob-edit-title { display: block; }
 .ob-title { font-size: clamp(2.25rem, 1.6rem + 3vw, var(--t-display)); }
@@ -74,19 +75,31 @@ button { cursor: pointer; }
 .tile__flap { transform: translate(calc(var(--dx, 0) * var(--tp-tile) / 18), calc(var(--dy, 0) * var(--tp-tile) / 18)); filter: drop-shadow(calc((var(--dx, 0) * -4 - 2) * 1px) calc((var(--dy, 0) * -4 - 2) * 1px) 6px var(--tp-tile-flap-shadow)); }
 .tile__flap path { fill: var(--c-on-brand); stroke: var(--c-brand); stroke-width: 4; stroke-linejoin: round; }
 .q { margin: 0; padding: 0; border: 0; min-width: 0; }
-.q legend { margin-bottom: var(--s-3); padding: 0; color: var(--c-ink); font: 700 var(--t-body)/1.3 var(--f-sans); }
+.q legend { margin-bottom: 10px; padding: 0; color: var(--c-ink); font: 700 var(--t-body)/1.3 var(--f-sans); }
 .hint { margin-left: var(--s-1); color: var(--c-muted); font-size: var(--t-caption); font-weight: 500; }
 .seg--full { display: flex; width: 100%; }
 .seg--full .seg__btn { flex: 1; height: var(--hit); font-size: var(--t-body); }
+.onboard .seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--s-1); height: var(--tp-seg-h); padding: var(--s-1); background: var(--tp-seg-bg); box-shadow: inset 0 0 0 1px var(--tp-seg-line); }
+.onboard .seg .seg__btn { height: 100%; padding: 0; color: var(--c-muted); font: 500 var(--t-body)/1 var(--f-sans); }
+.onboard .seg .seg__btn[aria-pressed="true"] { background: var(--tp-seg-on); box-shadow: var(--tp-shadow-seg); color: var(--c-ink); font-weight: 700; }
+/* 화면 모드 (4-8): 설정 바꾸기에서만, 가격 아래 구분선 다음 */
+.q--theme { display: none; }
+.onboard.is-edit .q--theme { display: block; }
+.q-rule { display: none; width: 100%; height: 1px; margin: 0; border: 0; background: var(--c-line); }
+.onboard.is-edit .q-rule { display: block; }
+.q--theme legend { display: flex; align-items: center; gap: 6px; }
+.q--theme legend svg { width: 18px; height: 18px; }
+.q--theme .hint { margin-left: 0; }
+.theme-fade, .theme-fade * { transition: background-color var(--tp-dur-follow) var(--ease-standard), color var(--tp-dur-follow) var(--ease-standard) !important; }
 .picks { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .picks button {
-  height: var(--hit); padding: 0 var(--s-4); border: 1px solid var(--c-line-strong); border-radius: var(--r-pill);
-  background: var(--c-surface); color: var(--c-ink-2); font: 650 var(--t-label)/1 var(--f-sans);
+  height: var(--h-md); padding: 0 var(--s-4); border: 0; border-radius: var(--r-pill);
+  background: var(--c-surface); box-shadow: inset 0 0 0 1px var(--c-line); color: var(--c-ink-2); font: 600 var(--tp-t-name)/1 var(--f-sans);
   transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2), border-color var(--dur-2), transform var(--dur-3) var(--ease-spring);
 }
 .picks button:active { transform: scale(.94); transition-duration: var(--dur-1); }
-.picks button[aria-pressed="true"] { border-color: var(--c-ink); background: var(--c-ink); color: var(--c-surface); }
-@media (hover: hover) { .picks button:hover:not([aria-pressed="true"]) { border-color: var(--c-ink); color: var(--c-ink); } }
+.picks button[aria-pressed="true"] { background: var(--c-ink); box-shadow: none; color: var(--tp-toast-fg); }
+@media (hover: hover) { .picks button:hover:not([aria-pressed="true"]) { box-shadow: inset 0 0 0 1px var(--c-ink); color: var(--c-ink); } }
 .ob-foot { display: flex; flex-direction: column; gap: var(--s-2); margin-top: auto; }
 .count { margin: 0 0 var(--s-1); color: var(--c-muted); font-size: var(--t-label); text-align: center; font-variant-numeric: tabular-nums; }
 .link { min-height: var(--hit); border: 0; background: none; color: var(--c-muted); font: 500 var(--t-label) var(--f-sans); }
@@ -113,7 +126,10 @@ button { cursor: pointer; }
 .deck { position: absolute; inset: 0; transform: translateY(calc(var(--pull, 0) * 124px)); transition: transform 460ms var(--ease-out); }
 .pcard { position: absolute; inset: 0; overflow: hidden; border-radius: var(--r-xl); background: var(--c-surface); }
 .pbody { position: absolute; inset: 0; display: flex; flex-direction: column; }
-.front { z-index: 1; box-shadow: var(--tp-shadow-card); transform: perspective(1200px) rotateX(calc(var(--ty, 0) * -3deg)) rotateY(calc(var(--tx, 0) * 3deg)); transition: transform var(--tp-dur-follow) var(--ease-standard); }
+.front { position: absolute; inset: 0; z-index: 1; filter: var(--tp-filter-card); transform: perspective(1200px) rotateX(calc(var(--ty, 0) * -3deg)) rotateY(calc(var(--tx, 0) * 3deg)); transition: transform var(--tp-dur-follow) var(--ease-standard); }
+/* 카드 면: 접힌 만큼 모서리를 잘라 뒤 카드가 그대로 보이게 한다 (5-1, 4-7) */
+.face { --fold: 0px; position: absolute; inset: 0; overflow: hidden; border-radius: var(--r-xl); background: var(--c-surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%, 0 100%); transition: clip-path var(--tp-dur-fold) var(--ease-icon); }
+.deck.enter { animation: tp-state-in 420ms var(--ease-out); }
 .back { box-shadow: var(--tp-shadow-card-back); transform: translateY(var(--tp-back-y)) scale(var(--tp-back-scale)); transform-origin: 50% 100%; }
 .back .tags, .back .seq { visibility: hidden; }       /* 배지·순번은 맨 앞에 올라온 뒤 등장 */
 
@@ -129,7 +145,7 @@ button { cursor: pointer; }
 /* 누끼 모드 (app.js layoutPhoto): 판매처 원본 + 실루엣 마스크, 상품이 칸의 80%를 채우도록 위치·크기를 인라인으로 지정 */
 .is-cut, .ob-art figure.is-cut, .like-item .ph.is-cut { background: var(--c-surface); }   /* 사진 칸은 흰색, 상품 그림자 없음 (4-6) */
 .is-cut img { position: absolute; max-width: none; object-fit: fill; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; }
-.coach { position: absolute; z-index: 2; left: 50%; top: calc(var(--photo-h) - var(--h-md) - var(--s-4)); height: var(--h-md); margin: 0; padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--tp-ink-pill); color: var(--tp-on-ink); font: 600 var(--t-label)/var(--h-md) var(--f-sans); white-space: nowrap; pointer-events: none; translate: -50% 0; transition: opacity var(--dur-4) var(--ease-standard); }   /* 구매 토스트와 같은 모양, 상품을 가리지 않게 사진 칸 아래쪽 */
+.coach { position: absolute; z-index: 2; left: 50%; top: calc(var(--photo-h) - var(--h-md) - var(--s-4)); height: var(--h-md); margin: 0; padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--tp-toast-bg); color: var(--tp-toast-fg); font: 600 var(--t-label)/var(--h-md) var(--f-sans); white-space: nowrap; pointer-events: none; translate: -50% 0; transition: opacity var(--dur-4) var(--ease-standard); }   /* 구매 토스트와 같은 모양, 상품을 가리지 않게 사진 칸 아래쪽 */
 .coach.hide { opacity: 0; }
 
 /* 카드 정보 (4-1): 큰 브랜드명, 자간을 넓힌 작은 대문자 라벨 */
@@ -145,7 +161,7 @@ button { cursor: pointer; }
 .tp-badge { position: relative; display: inline-flex; align-items: center; height: var(--tp-badge-h); padding: 0 var(--tp-badge-pr) 0 var(--tp-badge-pl); border-radius: var(--tp-badge-r); background: var(--b); color: var(--f); font: 700 var(--tp-badge-t)/1 var(--f-sans); letter-spacing: .06em; white-space: nowrap; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tp-badge-fold)), calc(100% - var(--tp-badge-fold)) 100%, 0 100%); }
 .tp-badge::after { content: ""; position: absolute; right: 0; bottom: 0; width: var(--tp-badge-fold); height: var(--tp-badge-fold); background: var(--flap); border-top-left-radius: var(--tp-badge-fold-r); clip-path: polygon(0 0, 100% 0, 0 100%); }
 .tp-badge--collab { --b: var(--c-brand); --f: var(--c-on-brand); --flap: var(--c-on-brand); }
-.tp-badge--new { --b: var(--tp-ink-pill); --f: var(--tp-on-ink); --flap: var(--tp-flap-new); }
+.tp-badge--new { --b: var(--tp-admin-bg); --f: var(--tp-admin-fg); --flap: var(--c-brand); }   /* 관리자 배지와 같은 모양 */
 .tp-badge--admin { --b: var(--tp-admin-bg); --f: var(--tp-admin-fg); --flap: var(--c-brand); font-size: var(--tp-badge-t-ko); letter-spacing: 0; }
 .tp-badge--sm { --tp-badge-h: var(--tp-badge-sm-h); --tp-badge-r: var(--tp-badge-sm-r); --tp-badge-fold: var(--tp-badge-sm-fold); --tp-badge-fold-r: var(--tp-badge-sm-fold-r); --tp-badge-pl: var(--tp-badge-sm-pl); --tp-badge-pr: var(--tp-badge-sm-pr); --tp-badge-t: var(--tp-badge-sm-t); }
 .tags.play .tp-badge { animation: tp-badge-in 280ms var(--ease-out) both; animation-delay: calc(var(--n, 0) * 60ms); }
@@ -158,7 +174,7 @@ button { cursor: pointer; }
 .actions { position: absolute; right: var(--s-4); bottom: var(--bar-x); z-index: 3; display: flex; flex-direction: column; gap: 10px; }
 .act {
   display: grid; place-items: center; width: var(--act); height: var(--act); padding: 0; border: 0; border-radius: 50%;
-  background: var(--c-surface); color: var(--c-ink); box-shadow: var(--tp-shadow-act), 0 0 0 1px var(--tp-act-ring);
+  background: var(--tp-act-bg); color: var(--tp-act-fg); box-shadow: var(--tp-shadow-act);
   transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2), transform var(--dur-3) var(--ease-spring);
 }
 .act:active { transform: scale(.965); transition-duration: var(--dur-1); }
@@ -169,19 +185,39 @@ button { cursor: pointer; }
 .act.buy { background: var(--c-brand); color: var(--c-on-brand); box-shadow: inset 0 0 0 1px var(--tp-ring-buy), var(--tp-shadow-buy); }
 
 /* Peel 전환 (5-1): 카드 오른쪽 아래가 접히고 위로 빠지면서 뒤 카드가 올라온다 */
-.peel { position: absolute; z-index: 4; right: 0; bottom: 0; width: 0; height: 0; pointer-events: none; transition: width var(--tp-dur-peel-press) var(--ease-out), height var(--tp-dur-peel-press) var(--ease-out); }
-.peel--cut { background: var(--c-bg-app); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.peel { position: absolute; z-index: 4; right: 0; bottom: 0; width: var(--fold); height: var(--fold); pointer-events: none; transition: width var(--tp-dur-fold) var(--ease-icon), height var(--tp-dur-fold) var(--ease-icon); }
 .peel--flap { filter: drop-shadow(-3px -3px 8px var(--tp-peel-shadow)); }
 .peel--flap i { display: block; width: 100%; height: 100%; background: var(--c-brand); border-top-left-radius: 42%; clip-path: polygon(0 0, 100% 0, 0 100%); }
-[data-phase="peel"] .peel, [data-phase="exit"] .peel { width: var(--tp-peel); height: var(--tp-peel); }
+[data-phase="peel"] .face, [data-phase="exit"] .face { --fold: var(--tp-peel); }
+[data-phase="peel"] .face, [data-phase="exit"] .face, [data-phase="peel"] .peel, [data-phase="exit"] .peel { transition-duration: var(--tp-dur-peel-press); transition-timing-function: var(--ease-out); }
 [data-phase="peel"] .front { transform: scale(.985); transition: transform var(--tp-dur-peel-press) var(--ease-out); }
 [data-phase="exit"] .front { transform: translateY(-118%) rotate(-7deg); transition: transform var(--tp-dur-peel-exit) var(--ease-in); }
 [data-phase="exit"] .back { transform: none; transition: transform var(--tp-dur-peel-back) var(--ease-out) 60ms; }
-[data-phase="reset"] .front, [data-phase="reset"] .back, [data-phase="reset"] .peel, [data-phase="reset"] .pic { transition: none; }
+[data-phase="reset"] .front, [data-phase="reset"] .back, [data-phase="reset"] .face, [data-phase="reset"] .peel, [data-phase="reset"] .pic { transition: none; }
+
+/* 표지 카드 (4-7): 숫자 포스터. Volt는 접힌 모서리 하나뿐 */
+.cover { position: absolute; inset: 0; display: flex; flex-direction: column; padding: var(--tp-cv-pad); background: var(--c-surface); color: var(--c-ink); }
+.cover__label { color: var(--c-muted); font: 700 var(--tp-cv-label)/normal var(--f-sans); }
+.cover__main, .cover__zero { display: flex; flex-direction: column; margin-top: auto; }
+.cover__main { --n: var(--tp-cv-n3); }
+.cover__main[data-d="4"] { --n: var(--tp-cv-n4); }
+.cover__main[data-d="5"] { --n: var(--tp-cv-n5); }
+.cover__n { margin-left: calc(var(--n) * -.045); font: 800 var(--n)/.86 var(--f-sans); letter-spacing: -.055em; }
+.cover__s { margin-top: calc(var(--n) * .2); font: 800 var(--tp-cv-sent)/1.15 var(--f-sans); letter-spacing: var(--tp-tr-logo); }
+.cover__zt { font: 800 var(--tp-cv-zero)/1.12 var(--f-sans); letter-spacing: -.04em; white-space: pre-line; }
+.cover__zs { margin-top: var(--s-3); color: var(--c-ink-2); font: 600 var(--tp-cv-zero-sub)/1.4 var(--f-sans); }
+.cover__rule { flex: none; height: 1px; margin: var(--tp-cv-line-t) 0 var(--tp-cv-line-b); background: var(--c-line); }
+.cover__set { display: flex; align-items: flex-start; gap: var(--s-2); padding-right: var(--tp-cv-set-r); color: var(--c-ink-2); font: 600 var(--tp-cv-set)/1.35 var(--f-sans); }
+.cover__set svg { flex: none; width: var(--tp-cv-set-ic); height: var(--tp-cv-set-ic); margin-top: 1px; }
+.cover__set span { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.viewer[data-cover] .actions, .viewer[data-cover] .next-cue, .viewer[data-cover] .coach { display: none; }
+.viewer[data-cover="on"] .face { --fold: calc(var(--tp-cv-fold) + max(0px, (var(--tx, 0) + var(--ty, 0)) / 2 * var(--tp-cv-tilt))); }
+.viewer[data-cover="on"][data-nudge] .face { --fold: var(--tp-cv-fold-up); }
+.viewer[data-cover][data-phase="peel"] .face, .viewer[data-cover][data-phase="exit"] .face { --fold: var(--tp-cv-fold-go); }
 
 /* 구매 토스트: 카드 위 16px 가운데 */
-.buy-toast { position: absolute; z-index: 5; left: 50%; top: var(--s-4); display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-md); padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--tp-ink-pill); color: var(--tp-on-ink); font: 600 var(--t-label)/1 var(--f-sans); white-space: nowrap; translate: -50% 0; animation: ds-rise var(--dur-3) var(--ease-out); }
-.buy-toast svg { width: var(--s-4); height: var(--s-4); color: var(--c-brand); }
+.buy-toast { position: absolute; z-index: 5; left: 50%; top: var(--s-4); display: inline-flex; align-items: center; gap: var(--s-2); height: var(--h-md); padding: 0 var(--s-4); border-radius: var(--r-pill); background: var(--tp-toast-bg); color: var(--tp-toast-fg); font: 600 var(--t-label)/1 var(--f-sans); white-space: nowrap; translate: -50% 0; animation: ds-rise var(--dur-3) var(--ease-out); }
+.buy-toast svg { width: var(--s-4); height: var(--s-4); color: var(--tp-toast-ic); }
 
 /* 아이콘 반응 (5-3): 누를 때 1회, 모두 제자리로 */
 .ico { transform-origin: 50% 50%; }
@@ -348,7 +384,7 @@ button { cursor: pointer; }
   .pbody .info { flex: 1 0 min(var(--tp-card-pc-info-min), 46%); padding: var(--s-7) var(--s-5) var(--s-5); }
   .pbody .p-title { -webkit-line-clamp: 3; }
   .coach { top: auto; bottom: var(--s-4); left: calc(var(--photo-w) / 2); }
-  .next-cue { position: absolute; z-index: 2; top: 50%; left: calc(var(--photo-w) - var(--act) - var(--s-4)); display: grid; place-items: center; width: var(--act); height: var(--act); border-radius: 50%; background: var(--tp-ink-pill); color: var(--tp-on-ink); box-shadow: var(--tp-shadow-act); pointer-events: none; opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
+  .next-cue { position: absolute; z-index: 2; top: 50%; left: calc(var(--photo-w) - var(--act) - var(--s-4)); display: grid; place-items: center; width: var(--act); height: var(--act); border-radius: 50%; background: var(--tp-toast-bg); color: var(--tp-toast-fg); box-shadow: var(--tp-shadow-act); pointer-events: none; opacity: 0; transform: translate(calc(var(--s-2) * -1), -50%); transition: opacity var(--dur-2), transform var(--dur-3) var(--ease-spring); }
   .front:hover .next-cue, .hit:focus-visible ~ .next-cue { opacity: 1; transform: translate(0, -50%); }
   .hit:active ~ .next-cue { transform: translate(var(--s-1), -50%) scale(.965); transition-duration: var(--dur-1); }
 

@@ -107,14 +107,14 @@
   let shownCount = 0, poolTotal = 0;       // 카드 왼쪽 위 순번 (이번에 본 장수 / 조건에 맞는 상품 수)
   const makeBody = () => $('tpl-body').content.firstElementChild.cloneNode(true);
   let bodyFront = makeBody(), bodyBack = makeBody();   // 카드 내용: 전환이 끝나면 앞뒤를 맞바꿔 이미지를 다시 받지 않는다
-  $('shell-front').prepend(bodyFront);
+  $('front-face').prepend(bodyFront);
   $('shell-back').append(bodyBack);
 
   const priceBucket = p => (p < 100000 ? 0 : p < 300000 ? 1 : p < 700000 ? 2 : 3);
   const won = (p, est) => (est ? '약 ' : '') + '₩' + Math.round(p).toLocaleString('ko-KR');
 
   // ---------- 신상품 · 콜라보 가산점 ----------
-  const TODAY = Math.floor(Date.now() / 864e5);
+  const TODAY = Math.floor((Date.now() + 9 * 36e5) / 864e5);   // 한국 시간 기준 날짜 (build_feed와 같은 계산)
   const ageDays = f => (f.r || f.f ? TODAY - (f.r || f.f) : Infinity);       // 발매일, 없으면 처음 본 날
   const isNew = f => ageDays(f) <= 14;
   const freshness = f => { const a = ageDays(f); return a === Infinity ? 0 : Math.exp(-Math.max(0, a) / 21); };  // 3주마다 1/e
@@ -272,6 +272,7 @@
   }
   // 덱을 처음부터: 상품이 하나도 없으면 '한 바퀴 다 봄' 화면
   function startDeck() {
+    if (coverOn) endCover();
     peelGen++;
     setPhase('idle');
     current = null;
@@ -281,10 +282,89 @@
     if (f) show(f);
   }
   function setPhase(p) { phase = p; $('viewer').dataset.phase = p; }
+
+  // ---------- 표지 카드 (4-7): 덱 맨 앞 한 장. 순번에 세지 않고, 넘기는 동작은 상품과 같은 Peel ----------
+  const COVER_KEY = 'tapping.coverSeen';
+  const session = {
+    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+    set(k) { try { sessionStorage.setItem(k, '1'); } catch { /* 저장이 막힌 환경 */ } }
+  };
+  let coverOn = false, coverNudge = 0;
+  // 설정 요약: 전체인 항목은 생략, 카테고리 2개 이상은 "첫 항목 외 N", 가격은 이어지면 합친 범위
+  function priceSummary(prices) {
+    const a = [...prices].sort((x, y) => x - y), edge = [0, 10, 30, 70];
+    if (a.every((v, i) => !i || v === a[i - 1] + 1)) {
+      const lo = edge[a[0]], hi = edge[a[a.length - 1] + 1];
+      return !lo ? `~${hi}만` : !hi ? `${lo}만~` : `${lo}~${hi}만`;
+    }
+    return `${priceSummary([a[0]])} 외 ${a.length - 1}`;
+  }
+  function coverSummary() {
+    const s = settings, parts = [];
+    if (s.gender === 'men') parts.push('남성'); else if (s.gender === 'women') parts.push('여성');
+    if (s.cats.length < ALL_CATS.length) {
+      const c = ALL_CATS.filter(k => s.cats.includes(k));
+      parts.push(c.length > 1 ? `${CAT_LABEL[c[0]]} 외 ${c.length - 1}` : CAT_LABEL[c[0]]);
+    }
+    if (s.prices.length < ALL_PRICES.length) parts.push(priceSummary(s.prices));
+    return parts.join(' · ') || COPY.coverAll;
+  }
+  function renderCover() {
+    const now = new Date(Date.now() + 9 * 36e5), pool = FEED.filter(f => matches(f, settings));
+    const n = pool.filter(f => f.f === TODAY).length, main = $('cv-main'), zero = $('cv-zero');
+    $('cv-label').textContent = COPY.coverLabel(now.getUTCMonth() + 1, now.getUTCDate());
+    main.hidden = !n;
+    zero.hidden = !!n;
+    if (n) {
+      $('cv-n').textContent = n.toLocaleString('ko-KR');
+      $('cv-s').textContent = COPY.coverNew;
+      main.dataset.d = Math.min(5, Math.max(3, String(n).length));
+    } else {
+      $('cv-zt').textContent = COPY.coverZero;
+      $('cv-zs').textContent = COPY.coverRecent(pool.filter(isNew).length.toLocaleString('ko-KR'));
+    }
+    $('cv-set').textContent = coverSummary();
+    $('stage').setAttribute('aria-label', COPY.coverAria(n.toLocaleString('ko-KR')));
+  }
+  function startCover() {
+    peelGen++;
+    setPhase('idle');
+    current = null;
+    nextItem = pick();
+    setAllSeen(!nextItem);
+    if (!nextItem) return;
+    $('shell-back').hidden = false;
+    fillBody(bodyBack, nextItem);
+    renderCover();
+    coverOn = true;
+    $('cover').hidden = false;
+    const v = $('viewer');
+    if (reduceMotion.matches) { v.dataset.cover = 'on'; return; }   // 동작 줄이기: 등장·들썩 없이 접힘 고정
+    v.dataset.cover = 'in';
+    const d = $('deck'), done = e => { if (e.target !== d) return; d.classList.remove('enter'); d.removeEventListener('animationend', done); };
+    d.addEventListener('animationend', done);
+    d.classList.add('enter');
+    setTimeout(() => { if (coverOn) v.dataset.cover = 'on'; }, 260);
+    coverNudge = setInterval(() => {
+      if (!coverOn || phase !== 'idle' || v.dataset.cover !== 'on') return;
+      v.setAttribute('data-nudge', '');
+      setTimeout(() => v.removeAttribute('data-nudge'), 300);
+    }, 3200);
+  }
+  function endCover() {
+    coverOn = false;
+    clearInterval(coverNudge);
+    const v = $('viewer');
+    delete v.dataset.cover;
+    v.removeAttribute('data-nudge');
+    $('cover').hidden = true;
+    $('stage').setAttribute('aria-label', '다음 상품 보기');
+  }
   function swapToNext() {
+    if (coverOn) endCover();
     if (!nextItem) return setAllSeen(true);
     const front = bodyBack, back = bodyFront;
-    $('shell-front').prepend(front);
+    $('front-face').prepend(front);
     $('shell-back').append(back);
     bodyFront = front;
     bodyBack = back;
@@ -292,7 +372,7 @@
   }
   // Peel 전환 (5-1): 모서리 접힘 140ms → 위로 빠짐 260ms, 뒤 카드 올라옴 380ms → 620ms에 앞뒤 교체. 전환 중 탭은 무시
   function peel() {
-    if (phase !== 'idle' || !current) return;
+    if (phase !== 'idle' || (!current && !coverOn)) return;
     if (reduceMotion.matches) return swapToNext();
     const gen = ++peelGen;
     setPhase('peel');
@@ -310,6 +390,7 @@
   const ready = () => !!current && phase === 'idle';
   const dwell = () => Date.now() - shownAt;
   function onSkip() {
+    if (coverOn) return peel();
     if (!ready()) return;
     hideCoach();
     if (me) record(current, 'skip', -0.15, dwell()); else maybeNudge();
@@ -418,6 +499,7 @@
       pic.appendChild(img);
       fig.appendChild(pic);
       art.appendChild(fig);
+      fig._f = f;
       layoutPhoto(fig, img, f, FILL.art, 0.78);                   // 4:5 칸
       preloadMask(f, () => layoutPhoto(fig, img, f, FILL.art, 0.78));
     });
@@ -443,6 +525,7 @@
     });
   });
   $('start').addEventListener('click', () => {
+    session.set(COVER_KEY);                  // 처음 설정을 마친 직후에는 표지를 보여 주지 않는다
     settings = readOnboard();
     store.set('settings', settings);
     store.set('settingsV', SETTINGS_VERSION);
@@ -482,12 +565,12 @@
   }
   $('ob-back').addEventListener('click', () => { dropLayer('settings'); backToFeed(); });
 
-  function showFeed() {
+  function showFeed(withCover) {
     $('onboard').hidden = true;
     $('feed').hidden = false;
     poolTotal = FEED.filter(f => matches(f, settings)).length;
     shownCount = 0;
-    startDeck();
+    if (withCover) startCover(); else startDeck();
     $('coach').textContent = finePointer ? '사진을 클릭하면 다음 상품' : '빈 곳을 탭하면 다음 상품';
     if (store.get('coachDone', false)) hideCoach(); else setTimeout(hideCoach, 3500);
   }
@@ -934,8 +1017,39 @@
       } catch { /* 네트워크 오류면 파일 그림 그대로 */ }
     });
   }
-  darkScheme.addEventListener('change', inlineStateArt);
   inlineStateArt();
+
+  // 화면 모드 (4-8): 다크(기본) / 라이트 / 시스템, 기기에 저장하고 누르는 즉시 적용
+  const THEME_KEY = 'tapping.theme';
+  const readTheme = () => { try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'system' ? t : 'dark'; } catch { return 'dark'; } };
+  function afterThemeChange() {
+    inlineStateArt();
+    for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed);
+    document.querySelectorAll('#ob-art figure').forEach(fig => { if (fig._f) layoutPhoto(fig, fig.querySelector('img'), fig._f, FILL.art, 0.78); });
+  }
+  const syncThemeColor = () => { document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.body).backgroundColor; };
+  function paintThemeSeg() { const t = readTheme(); $('theme-seg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t))); }
+  function setTheme(t) {
+    try { localStorage.setItem(THEME_KEY, t); } catch { /* 저장이 막힌 환경: 이번 화면에만 적용 */ }
+    const root = document.documentElement;
+    root.classList.add('theme-fade');
+    if (t === 'system') delete root.dataset.theme; else root.dataset.theme = t;
+    paintThemeSeg();
+    afterThemeChange();
+    setTimeout(() => { root.classList.remove('theme-fade'); syncThemeColor(); }, 260);
+  }
+  $('theme-seg').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.dataset.t === readTheme()) return;
+    setTheme(b.dataset.t);
+    const moon = $('theme-moon');
+    moon.classList.remove('play');
+    void moon.getBoundingClientRect();
+    moon.classList.add('play');
+  });
+  darkScheme.addEventListener('change', () => { if (readTheme() === 'system') { afterThemeChange(); syncThemeColor(); } });
+  paintThemeSeg();
+  syncThemeColor();
 
   // 당겨서 새로 섞기 (5-5, 터치): 끌어내리는 만큼 로고 모서리가 접히고, 끝까지 당겼다 놓으면 새 상품으로
   const PULL = { id: null, y0: 0, v: 0, dragging: false, busy: false };
@@ -1017,7 +1131,11 @@
     }
     updateAccountUI();
     updateLikeCount();
-    if (settings) showFeed(); else showOnboard();
+    if (settings) {
+      const firstInTab = !session.get(COVER_KEY);    // 앱 실행·새 탭에서만 표지 (같은 탭 새로고침·판매처 복귀는 제외)
+      session.set(COVER_KEY);
+      showFeed(firstInTab);
+    } else showOnboard();
     $('boot').classList.add('done');
     setTimeout(() => $('boot').remove(), 400);
   }

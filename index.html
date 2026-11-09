@@ -19,6 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<script>(function(){try{var t=localStorage.getItem('tapping.theme'),r=document.documentElement;if(t==='light')r.setAttribute('data-theme','light');else if(t==='system')r.removeAttribute('data-theme');}catch(e){}})();</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="components.css">
@@ -88,6 +89,17 @@
         </div>
       </fieldset>
 
+      <!-- 화면 모드 (4-8): 설정 바꾸기에서만, 적용하기 없이 누르는 즉시 바뀜 -->
+      <hr class="q-rule">
+      <fieldset class="q q--theme">
+        <legend><svg class="ico" id="theme-moon" data-i="moon" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#moon"/></svg><span data-copy="themeTitle"></span><span class="hint" data-copy="themeHint"></span></legend>
+        <div class="seg seg--full" id="theme-seg">
+          <button class="seg__btn" type="button" data-t="dark" data-copy="themeDark"></button>
+          <button class="seg__btn" type="button" data-t="light" data-copy="themeLight"></button>
+          <button class="seg__btn" type="button" data-t="system" data-copy="themeSystem"></button>
+        </div>
+      </fieldset>
+
       <div class="ob-foot">
         <p class="count" id="ob-count" aria-live="polite"></p>
         <button class="btn btn--lg btn--block" id="start" type="button">시작하기</button>
@@ -132,7 +144,16 @@
       <!-- 카드 2장: 뒤 카드에는 다음 상품을 항상 미리 깔아 둔다 (Peel 전환) -->
       <div class="deck" id="deck">
         <article class="pcard back" id="shell-back" aria-hidden="true"></article>
-        <article class="pcard front" id="shell-front">
+        <article class="front" id="shell-front">
+          <div class="face" id="front-face">
+          <!-- 표지 카드 (4-7): 앱을 새로 열면 덱 맨 앞에 한 장, 탭하면 Peel로 첫 상품 -->
+          <div class="cover" id="cover" hidden>
+            <span class="cover__label" id="cv-label"></span>
+            <div class="cover__main" id="cv-main"><span class="cover__n" id="cv-n"></span><span class="cover__s" id="cv-s"></span></div>
+            <div class="cover__zero" id="cv-zero" hidden><span class="cover__zt" id="cv-zt"></span><span class="cover__zs" id="cv-zs"></span></div>
+            <div class="cover__rule"></div>
+            <div class="cover__set"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#sliders"/></svg><span id="cv-set"></span></div>
+          </div>
           <div class="hit" id="stage" role="button" tabindex="0" aria-label="다음 상품 보기"></div>
           <span class="next-cue" aria-hidden="true"><svg class="ico" data-i="arrow-right" viewBox="0 0 24 24"><use href="brand/icons/sprite.svg#arrow-right"/></svg></span>
           <p class="coach" id="coach"></p>
@@ -147,8 +168,8 @@
               <svg class="ico" data-i="bag" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#bag"/></svg>
             </button>
           </div>
-          <span class="peel peel--cut" aria-hidden="true"></span>
           <span class="peel peel--flap" aria-hidden="true"><i></i></span>
+          </div>
         </article>
         <div class="buy-toast" id="buy-toast" role="status" hidden>
           <svg class="ico" data-i="external" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#external"/></svg>

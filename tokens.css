@@ -206,19 +206,26 @@
   /* 접힌 모서리 배지: 24(기본) / 20(찜 목록 썸네일) */
   --tp-badge-h: 24px;    --tp-badge-r: 6px;    --tp-badge-fold: 8px;    --tp-badge-fold-r: 3px;    --tp-badge-pl: 9px;    --tp-badge-pr: 13px;    --tp-badge-t: 11px;    --tp-badge-t-ko: 12px;
   --tp-badge-sm-h: 20px; --tp-badge-sm-r: 5px; --tp-badge-sm-fold: 7px; --tp-badge-sm-fold-r: 2.5px; --tp-badge-sm-pl: 7px; --tp-badge-sm-pr: 11px; --tp-badge-sm-t: 10px; --tp-badge-sm-t-ko: 11px;
-  --tp-flap-new: #c9c9c3;
   --tp-on-ink: #ffffff;
-  --tp-ink-pill: light-dark(#0a0a0a, #242424);     /* 토스트·NEW 배지: 어두운 카드 위에서 묻히지 않게 */
+  --tp-toast-bg: light-dark(#0a0a0a, #f4f4f0);    /* 떠 있는 중립 요소(토스트·안내·선택된 칩): 다크는 밝은 면으로 반전 */
+  --tp-toast-fg: light-dark(#ffffff, #0a0a0a);
+  --tp-toast-ic: light-dark(#d4ff3a, #0a0a0a);
   --tp-admin-bg: light-dark(#0a0a0a, #242424);
   --tp-admin-fg: light-dark(#ffffff, #f4f4f0);
 
   /* 카드·버튼 */
-  --tp-shadow-card: 0 4px 14px rgb(10 10 10 / .06), 0 18px 44px rgb(10 10 10 / .08);       /* 맨 앞 카드 */
+  --tp-card-l1: light-dark(rgb(10 10 10 / .06), transparent);
+  --tp-card-l2: light-dark(rgb(10 10 10 / .08), transparent);
+  --tp-card-d: light-dark(transparent, rgb(0 0 0 / .45));
+  --tp-filter-card: drop-shadow(0 4px 14px var(--tp-card-l1)) drop-shadow(0 18px 44px var(--tp-card-l2)) drop-shadow(0 18px 40px var(--tp-card-d));   /* 맨 앞 카드: 접힌 모양을 따라가도록 filter */
   --tp-shadow-card-back: 0 1px 2px rgb(10 10 10 / .05), 0 2px 10px rgb(10 10 10 / .04);    /* 뒤 카드 */
-  --tp-shadow-act: 0 1px 2px rgb(10 10 10 / .06), 0 2px 10px rgb(10 10 10 / .08);          /* 흰 반응 버튼 */
-  --tp-ring-buy: rgb(10 10 10 / .14);
+  --tp-act-bg: light-dark(#ffffff, #242424);      /* 찜·별로 버튼 */
+  --tp-act-fg: light-dark(#0a0a0a, #f4f4f0);
+  --tp-act-c1: light-dark(rgb(10 10 10 / .06), transparent);
+  --tp-act-c2: light-dark(rgb(10 10 10 / .08), transparent);
+  --tp-shadow-act: 0 1px 2px var(--tp-act-c1), 0 2px 10px var(--tp-act-c2);
+  --tp-ring-buy: light-dark(rgb(10 10 10 / .14), transparent);
   --tp-peel-shadow: rgb(10 10 10 / .18);
-  --tp-act-ring: light-dark(transparent, #262626); /* 흰 버튼이 어두운 카드 위에 있을 때 윤곽 */
   --tp-state-btn: light-dark(#ffffff, #1c1c1c);    /* 빈 화면 보조 버튼 */
   --tp-state-art: 160px;   --tp-state-text: 270px;   --tp-state-btn-w: 220px;
 
@@ -233,6 +240,24 @@
   --tp-dur-tile: 220ms;
   --tp-shadow-tile: 0 18px 40px rgb(10 10 10 / .14);
   --tp-tile-flap-shadow: rgb(10 10 10 / .28);
+  /* 설정 화면 세그먼트 (4-8) */
+  --tp-seg-h: 48px;
+  --tp-seg-bg: light-dark(#ebebe6, #141414);
+  --tp-seg-line: light-dark(#e5e5e0, #262626);
+  --tp-seg-on: light-dark(#ffffff, #242424);
+  --tp-seg-c: light-dark(rgb(10 10 10 / .06), transparent);
+  --tp-shadow-seg: 0 1px 2px var(--tp-seg-c), 0 2px 8px var(--tp-seg-c);
+
+  /* 표지 카드 (4-7): 휴대폰 402 기준, 작은 휴대폰·PC는 아래 @media */
+  --tp-cv-pad: 28px;   --tp-cv-label: 13px;
+  --tp-cv-n3: 136px;   --tp-cv-n4: 112px;   --tp-cv-n5: 92px;
+  --tp-cv-sent: 30px;  --tp-cv-zero: 40px;  --tp-cv-zero-sub: 17px;
+  --tp-cv-line-t: 24px; --tp-cv-line-b: 20px;
+  --tp-cv-set: 15px;   --tp-cv-set-ic: 18px; --tp-cv-set-r: 88px;
+  --tp-cv-fold: 72px;  --tp-cv-fold-up: 90px; --tp-cv-fold-go: 104px;
+  --tp-cv-tilt: 18px;
+  --tp-dur-fold: 300ms;
+
   /* Peel 전환 (약 620ms, 브랜드 시그니처로 승인된 예외) */
   --tp-peel: 104px;
   --tp-back-y: 18px;
@@ -244,7 +269,14 @@
   --ease-icon: cubic-bezier(.33, 1, .68, 1);
 }
 @media (prefers-reduced-motion: reduce) {
-  :root { --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; }
+  :root { --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; --tp-dur-fold: 1ms; }
+}
+
+@media (max-width: 379px), (max-height: 640px) {
+  :root { --tp-cv-pad: 24px; --tp-cv-label: 12px; --tp-cv-n3: 112px; --tp-cv-n4: 96px; --tp-cv-n5: 76px; --tp-cv-sent: 26px; --tp-cv-zero: 34px; --tp-cv-zero-sub: 15px; --tp-cv-line-t: 20px; --tp-cv-line-b: 16px; --tp-cv-set: 14px; --tp-cv-set-ic: 17px; --tp-cv-set-r: 80px; --tp-cv-fold: 64px; --tp-cv-fold-up: 80px; --tp-cv-fold-go: 92px; }
+}
+@media (min-width: 1024px) {
+  :root { --tp-cv-pad: 56px; --tp-cv-label: 15px; --tp-cv-n3: 240px; --tp-cv-n4: 200px; --tp-cv-n5: 168px; --tp-cv-sent: 48px; --tp-cv-zero: 64px; --tp-cv-zero-sub: 20px; --tp-cv-line-t: 32px; --tp-cv-line-b: 24px; --tp-cv-set: 17px; --tp-cv-set-ic: 20px; --tp-cv-set-r: 112px; --tp-cv-fold: 96px; --tp-cv-fold-up: 120px; --tp-cv-fold-go: 136px; }
 }
 
 /* ---------- 5. v1.0 이름 호환 (기존 화면이 깨지지 않게) ---------- */
