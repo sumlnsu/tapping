@@ -905,7 +905,7 @@
   function likeCard(f) {
     const a = document.createElement('a');
     a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = `<div class="ph" data-theme="light"><div class="pic"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><div class="tile-tags">${f.x ? '<span class="tp-badge tp-badge--sm tp-badge--collab">COLLAB</span>' : ''}${isNew(f) ? '<span class="tp-badge tp-badge--sm tp-badge--new">NEW</span>' : ''}</div><button type="button" class="unlike" aria-label="찜 빼기"><svg class="ico" data-i="heart-filled" viewBox="0 0 24 24" aria-hidden="true"><use href="${ICON}heart-filled"/></svg></button></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>`;
+    a.innerHTML = `<div class="ph" data-theme="light"><div class="pic"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><div class="tile-tags">${f.x ? '<span class="tp-badge tp-badge--sm tp-badge--collab">COLLAB</span>' : ''}${isNew(f) ? '<span class="tp-badge tp-badge--sm tp-badge--new">NEW</span>' : ''}</div></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>`;
     a.querySelector('img').src = f.im;
     const ph = a.querySelector('.ph'), pimg = a.querySelector('img');
     layoutPhoto(ph, pimg, f, FILL.tile, 1);                       // 정사각형 칸
@@ -914,15 +914,6 @@
     a.querySelector('b').textContent = f.b;
     a.querySelector('.t').textContent = f.t;
     a.querySelector('.pr').textContent = won(f.p, f.e);
-    a.querySelector('.unlike').addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
-      likes = likes.filter(id => id !== f.id);
-      record(f, 'unlike', -1);
-      updateLikeCount();
-      if (current && current.id === f.id) setLikeBtn(false);
-      toast('찜에서 뺐어요');
-      renderLikes();
-    });
     return a;
   }
 

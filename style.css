@@ -424,8 +424,6 @@ button { cursor: pointer; }
 .like-item .ph { position: relative; aspect-ratio: 1; background: var(--c-surface); }
 .like-item .pic { inset: var(--s-3); }
 .like-item img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.unlike { position: absolute; z-index: 1; top: var(--s-1); right: var(--s-1); display: grid; place-items: center; width: var(--hit); height: var(--hit); border: 0; background: none; color: var(--c-depth); }
-.unlike svg { width: 20px; height: 20px; }
 .like-item .tx { padding: var(--s-2) var(--s-3) var(--s-3); font-size: var(--t-caption); }
 .like-item .tx .sub { display: block; margin-bottom: 2px; color: var(--c-accent-strong); font-weight: 650; }
 .like-item b { display: block; color: var(--c-ink); font-size: var(--t-label); }
