@@ -79,13 +79,16 @@
       </fieldset>
 
       <fieldset class="q">
-        <legend>가격 <span class="hint">여러 개 선택</span></legend>
-        <div class="picks" data-key="prices">
-          <button type="button" data-v="all">전체</button>
-          <button type="button" data-v="0">~10만</button>
-          <button type="button" data-v="1">10~30만</button>
-          <button type="button" data-v="2">30~70만</button>
-          <button type="button" data-v="3">70만~</button>
+        <legend>가격 <span class="hint" data-copy="priceHint"></span></legend>
+        <div class="pr-fields">
+          <label class="pr-field"><input id="price-min" type="number" inputmode="numeric" min="0" step="1" placeholder="0" aria-label="최소 가격 (만원)"><em data-copy="priceUnit"></em></label>
+          <span class="pr-dash" aria-hidden="true">~</span>
+          <label class="pr-field"><input id="price-max" type="number" inputmode="numeric" min="0" step="1" aria-label="최대 가격 (만원)"><em data-copy="priceUnit"></em></label>
+        </div>
+        <div class="pr-slider" id="pr-slider">
+          <div class="pr-track"></div>
+          <input id="pr-lo" type="range" min="0" step="1" value="0" aria-label="최소 가격">
+          <input id="pr-hi" type="range" min="0" step="1" value="21" aria-label="최대 가격">
         </div>
       </fieldset>
 

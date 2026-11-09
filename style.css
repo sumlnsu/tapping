@@ -100,6 +100,24 @@ button { cursor: pointer; }
 .picks button:active { transform: scale(.94); transition-duration: var(--dur-1); }
 .picks button[aria-pressed="true"] { background: var(--c-ink); box-shadow: none; color: var(--tp-toast-fg); }
 @media (hover: hover) { .picks button:hover:not([aria-pressed="true"]) { box-shadow: inset 0 0 0 1px var(--c-ink); color: var(--c-ink); } }
+/* 가격 범위: 직접 입력 + 양쪽 손잡이 슬라이더 */
+.pr-fields { display: flex; align-items: center; gap: var(--s-2); }
+.pr-field { position: relative; flex: 1; min-width: 0; }
+.pr-field input { width: 100%; height: var(--h-md); padding: 0 calc(var(--s-7) + var(--s-1)) 0 var(--s-4); border: 0; border-radius: var(--r-pill); background: var(--c-surface); box-shadow: inset 0 0 0 1px var(--c-line); color: var(--c-ink); font: 600 var(--tp-t-name)/1 var(--f-sans); -moz-appearance: textfield; appearance: textfield; }
+.pr-field input::-webkit-outer-spin-button, .pr-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.pr-field input::placeholder { color: var(--c-muted); }
+.pr-field input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--c-ink); }
+.pr-field em { position: absolute; right: var(--s-4); top: 50%; translate: 0 -50%; color: var(--c-muted); font: 500 var(--t-caption)/1 var(--f-sans); pointer-events: none; }
+.pr-dash { color: var(--c-muted); font: 500 var(--t-body)/1 var(--f-sans); }
+.pr-slider { --a: 0%; --b: 100%; position: relative; height: var(--hit); margin-top: var(--s-1); }
+.pr-track { position: absolute; left: calc(var(--tp-range-thumb) / 2); right: calc(var(--tp-range-thumb) / 2); top: 50%; height: var(--tp-range-track); translate: 0 -50%; border-radius: var(--r-pill); background: var(--c-line); }
+.pr-track::after { content: ""; position: absolute; top: 0; bottom: 0; left: var(--a); right: calc(100% - var(--b)); border-radius: var(--r-pill); background: var(--c-brand); }
+.pr-slider input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+.pr-slider input::-webkit-slider-runnable-track { background: none; }
+.pr-slider input::-moz-range-track { background: none; }
+.pr-slider input::-webkit-slider-thumb { width: var(--tp-range-thumb); height: var(--tp-range-thumb); border: 0; border-radius: 50%; background: var(--c-brand); box-shadow: inset 0 0 0 1px var(--tp-ring-buy), var(--tp-shadow-buy); cursor: grab; pointer-events: auto; -webkit-appearance: none; appearance: none; }
+.pr-slider input::-moz-range-thumb { width: var(--tp-range-thumb); height: var(--tp-range-thumb); border: 0; border-radius: 50%; background: var(--c-brand); box-shadow: inset 0 0 0 1px var(--tp-ring-buy), var(--tp-shadow-buy); cursor: grab; pointer-events: auto; }
+.pr-slider input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--c-ink); outline-offset: 2px; }
 .ob-foot { display: flex; flex-direction: column; gap: var(--s-2); margin-top: auto; }
 .count { margin: 0 0 var(--s-1); color: var(--c-muted); font-size: var(--t-label); text-align: center; font-variant-numeric: tabular-nums; }
 .link { min-height: var(--hit); border: 0; background: none; color: var(--c-muted); font: 500 var(--t-label) var(--f-sans); }
@@ -139,6 +157,8 @@ button { cursor: pointer; }
 .pic { position: absolute; inset: calc(var(--s-5) + var(--s-1)); }
 .front .pic { transform: translate(calc(var(--tx, 0) * -6px), calc(var(--ty, 0) * -6px)); transition: transform var(--tp-dur-follow) var(--ease-standard); }   /* 사진은 카드와 반대로 (패럴랙스) */
 .photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.pbody .photo img { opacity: 0; transition: opacity var(--dur-2) var(--ease-standard); }
+.pbody .photo img.is-ready { opacity: 1; }   /* 사진을 다 받은 뒤에만 보임: 앞 상품 사진이 비치지 않게 */
 .seq { position: absolute; left: var(--bar-x); top: calc(var(--s-4) + 2px); color: var(--c-muted); font: 700 var(--tp-t-micro)/normal var(--f-sans); letter-spacing: .1em; font-variant-numeric: tabular-nums; }
 .next-cue { display: none; }
 

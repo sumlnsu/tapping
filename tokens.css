@@ -248,6 +248,9 @@
   --tp-seg-c: light-dark(rgb(10 10 10 / .06), transparent);
   --tp-shadow-seg: 0 1px 2px var(--tp-seg-c), 0 2px 8px var(--tp-seg-c);
 
+  /* 가격 범위 슬라이더 */
+  --tp-range-thumb: 28px;   --tp-range-track: 4px;
+
   /* 표지 카드 (4-7): 휴대폰 402 기준, 작은 휴대폰·PC는 아래 @media */
   --tp-cv-pad: 28px;   --tp-cv-label: 13px;
   --tp-cv-n3: 136px;   --tp-cv-n4: 112px;   --tp-cv-n5: 92px;

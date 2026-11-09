@@ -24,6 +24,12 @@ window.TAPPING_COPY = {
   coverAll: '전체 상품',
   coverAria: n => `오늘 새 상품 ${n}개. 탭하면 첫 상품으로 넘어가요`,
 
+  priceHint: '직접 입력하거나 밀어서 조절',
+  priceUnit: '만원',
+  priceNoLimit: '제한 없음',
+  priceNone: '조건에 맞는 상품이 없어요. 가격 범위를 넓혀 보세요',
+  pickCategory: '카테고리를 하나 이상 골라 주세요',
+
   themeTitle: '화면 모드',
   themeHint: '누르면 바로 바뀌어요',
   themeDark: '다크',

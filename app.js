@@ -59,6 +59,19 @@
     im.onerror = () => { maskState.set(url, 'fail'); onDone && onDone(); };
     im.src = url;
   }
+  // 사진 미리 받기: 받아 둔 Image를 잡아 두어 카드에 넣을 때 다시 받지 않는다
+  const imgCache = new Map();
+  function loadImage(url) {
+    const hit = imgCache.get(url);
+    if (hit) return hit.done;
+    const im = new Image();
+    im.referrerPolicy = 'no-referrer';
+    const done = new Promise(res => { im.onload = () => res(true); im.onerror = () => res(false); });
+    im.src = url;
+    imgCache.set(url, { im, done });
+    if (imgCache.size > 30) imgCache.delete(imgCache.keys().next().value);
+    return done;
+  }
   // box: 사진 칸(배경색 담당), img의 부모 .pic: 내용 영역. fill: 상품이 채울 비율, aspect: 칸 가로/세로(모르면 실제 크기로)
   function layoutPhoto(box, img, f, fill, aspect) {
     const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail');
@@ -99,7 +112,7 @@
   let likes = [], events = [];
   let pendingAct = null;                   // 비로그인 때 누른 ❤️/👎 → 로그인 직후 이어서 실행
   const shownLog = [];                     // 이번에 보여 준 상품 기록 (최근 30장: 브랜드·몰·세부 분류 다양성용)
-  let current = null, nextItem = null, shownAt = 0;
+  let current = null, nextItem = null, spare = null, shownAt = 0;   // spare: 그다음 상품 (사진을 미리 받아 둔다)
   let phase = 'idle';                      // Peel 전환: idle → peel(0~140ms) → exit(~620ms) → reset(1프레임) → idle
   let peelGen = 0;                         // 전환 도중 설정을 바꿨을 때 남은 타이머를 무시하기 위한 번호
   let shownCount = 0, poolTotal = 0;       // 카드 왼쪽 위 순번 (이번에 본 장수 / 조건에 맞는 상품 수)
@@ -119,15 +132,23 @@
   const prior = f => 1.2 * freshness(f) + 0.6 * (f.x ? 1 : 0);
 
   // ---------- 후보군 ----------
+  // 가격 범위 [최소, 최대(null = 제한 없음)]. 예전 설정(구간 선택)은 양 끝을 범위로 바꿔 읽는다
+  const PRICE_EDGE = [0, 100000, 300000, 700000, null];
+  function priceRange(s) {
+    if (s.price) return s.price;
+    const a = [...(s.prices || [0, 1, 2, 3])].sort((x, y) => x - y);
+    return [PRICE_EDGE[a[0]], PRICE_EDGE[a[a.length - 1] + 1]];
+  }
   function matches(f, s) {
     if (s.gender === 'men' && f.g === 'women') return false;
     if (s.gender === 'women' && f.g === 'men') return false;
-    return s.cats.includes(f.c) && s.prices.includes(priceBucket(f.p));
+    const [lo, hi] = priceRange(s);
+    return s.cats.includes(f.c) && f.p >= lo && (hi === null || f.p <= hi);
   }
   // 찜한 상품·싫어요 누른 상품·이미 본 상품은 다시 보여 주지 않는다 (찜은 찜 목록에서 보기)
   function pool() {
     const liked = new Set(likes);
-    return FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem);
+    return FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem && f !== spare);
   }
 
   // ---------- 다양성: 같은 브랜드·몰·세부 분류가 연달아 나오지 않게 ----------
@@ -237,11 +258,37 @@
   function fillBody(body, f) {
     const img = body.querySelector('img'), photo = body.querySelector('.photo');
     body._f = f;
-    img.src = f.im;
+    const token = body._t = (body._t || 0) + 1;
+    img.classList.remove('is-ready');
+    img.removeAttribute('src');                          // 새 사진을 받는 동안 앞 상품 사진이 남아 있지 않게
     img.alt = `${f.b} ${f.t}`;
     layoutPhoto(photo, img, f, FILL.feed);               // 누끼면 크기 통일, 아니면 사진 배경색에 칸을 맞춤
     preloadMask(f, () => { if (body._f === f) layoutPhoto(photo, img, f, FILL.feed); });
     fillInfo(body, f);
+    loadImage(f.im).then(ok => {
+      if (body._t !== token) return;
+      if (!ok) return imageFailed(body, f);
+      img.src = f.im;
+      const done = () => { if (body._t === token) img.classList.add('is-ready'); };
+      if (img.decode) img.decode().then(done, done); else done();
+    });
+  }
+  // 사진을 못 받으면 아직 뒤에 있는 상품만 조용히 바꾼다. 화면에 올라온 상품은 절대 바꾸지 않는다
+  function imageFailed(body, f) {
+    seen.add(f.id);
+    if (body !== bodyBack || nextItem !== f || phase !== 'idle') return;
+    nextItem = takeNext();
+    $('shell-back').hidden = !nextItem;
+    if (nextItem) { fillBody(bodyBack, nextItem); refillSpare(); }
+  }
+  const takeNext = () => { const f = spare || pick(); spare = null; return f; };
+  // 빠르게 넘겨도 사진이 준비되어 있도록 한 장 더 미리 받는다 (다양성 계산은 다음 상품까지 본 것으로)
+  function refillSpare() {
+    if (spare || !nextItem) return;
+    shownLog.push({ b: nextItem.b, m: nextItem.m, s: nextItem.s, c: nextItem.c });
+    spare = pick();
+    shownLog.pop();
+    if (spare) { loadImage(spare.im); preloadMask(spare); }
   }
   function playBadges(root) { const t = root.querySelector('.tags'); t.classList.remove('play'); void t.offsetWidth; t.classList.add('play'); }
 
@@ -259,9 +306,9 @@
     playBadges(bodyFront);
     $('sr-now').textContent = `${f.b} ${f.t} ${won(f.p, f.e)}`;
     setLikeBtn(likes.includes(f.id));
-    nextItem = pick();
+    nextItem = takeNext();
     $('shell-back').hidden = !nextItem;
-    if (nextItem) fillBody(bodyBack, nextItem);
+    if (nextItem) { fillBody(bodyBack, nextItem); refillSpare(); }
   }
   function setAllSeen(on) {
     $('viewer').classList.toggle('is-empty', on);
@@ -275,6 +322,7 @@
     setPhase('idle');
     current = null;
     nextItem = null;
+    spare = null;
     const f = pick();
     setAllSeen(!f);
     if (f) show(f);
@@ -289,13 +337,12 @@
   };
   let coverOn = false, coverNudge = 0;
   // 설정 요약: 전체인 항목은 생략, 카테고리 2개 이상은 "첫 항목 외 N", 가격은 이어지면 합친 범위
-  function priceSummary(prices) {
-    const a = [...prices].sort((x, y) => x - y), edge = [0, 10, 30, 70];
-    if (a.every((v, i) => !i || v === a[i - 1] + 1)) {
-      const lo = edge[a[0]], hi = edge[a[a.length - 1] + 1];
-      return !lo ? `~${hi}만` : !hi ? `${lo}만~` : `${lo}~${hi}만`;
-    }
-    return `${priceSummary([a[0]])} 외 ${a.length - 1}`;
+  function priceText([lo, hi]) {
+    const man = v => (v / 10000).toLocaleString('ko-KR');
+    if (!lo && hi === null) return '';
+    if (!lo) return `~${man(hi)}만`;
+    if (hi === null) return `${man(lo)}만~`;
+    return `${man(lo)}~${man(hi)}만`;
   }
   function coverSummary() {
     const s = settings, parts = [];
@@ -304,7 +351,8 @@
       const c = ALL_CATS.filter(k => s.cats.includes(k));
       parts.push(c.length > 1 ? `${CAT_LABEL[c[0]]} 외 ${c.length - 1}` : CAT_LABEL[c[0]]);
     }
-    if (s.prices.length < ALL_PRICES.length) parts.push(priceSummary(s.prices));
+    const money = priceText(priceRange(s));
+    if (money) parts.push(money);
     return parts.join(' · ') || COPY.coverAll;
   }
   function renderCover() {
@@ -328,11 +376,13 @@
     peelGen++;
     setPhase('idle');
     current = null;
+    spare = null;
     nextItem = pick();
     setAllSeen(!nextItem);
     if (!nextItem) return;
     $('shell-back').hidden = false;
     fillBody(bodyBack, nextItem);
+    refillSpare();
     renderCover();
     coverOn = true;
     $('cover').hidden = false;
@@ -446,7 +496,7 @@
   const allOf = key => (key === 'cats' ? ALL_CATS : ALL_PRICES);
 
   function initOnboard() {
-    const s = settings || { gender: 'all', cats: [...ALL_CATS], prices: [...ALL_PRICES] };
+    const s = settings || { gender: 'all', cats: [...ALL_CATS], price: [0, null] };
     document.querySelectorAll('[data-key]').forEach(group => {
       const key = group.dataset.key;
       const isAll = key !== 'gender' && s[key].length === allOf(key).length;
@@ -454,32 +504,79 @@
         let on;
         if (key === 'gender') on = s.gender === b.dataset.v;
         else if (b.dataset.v === 'all') on = isAll;
-        else on = !isAll && s[key].includes(key === 'prices' ? Number(b.dataset.v) : b.dataset.v);
+        else on = !isAll && s[key].includes(b.dataset.v);
         b.setAttribute('aria-pressed', String(on));
       });
     });
+    setPriceUI(priceRange(s));
     updateCount();
     renderArt();
   }
   function readOnboard() {
-    const out = { gender: 'all', cats: [], prices: [] };
+    const out = { gender: 'all', cats: [], price: readPrice() };
     document.querySelectorAll('[data-key]').forEach(group => {
       const key = group.dataset.key;
       group.querySelectorAll('button[aria-pressed="true"]').forEach(b => {
         if (key === 'gender') out.gender = b.dataset.v;
         else if (b.dataset.v === 'all') out[key] = [...allOf(key)];
-        else out[key].push(key === 'prices' ? Number(b.dataset.v) : b.dataset.v);
+        else out[key].push(b.dataset.v);
       });
     });
     return out;
   }
   function updateCount() {
     const s = readOnboard();
-    const n = s.cats.length && s.prices.length ? FEED.filter(f => matches(f, s)).length : 0;
+    const n = s.cats.length ? FEED.filter(f => matches(f, s)).length : 0;
     const fresh = n ? FEED.filter(f => matches(f, s) && isNew(f)).length : 0;
-    $('ob-count').textContent = n ? `지금 조건에 맞는 상품 ${n.toLocaleString()}개${fresh ? ` · 2주 안에 나온 신상 ${fresh.toLocaleString()}개` : ''}` : '카테고리와 가격을 하나 이상 골라 주세요';
+    $('ob-count').textContent = n ? `지금 조건에 맞는 상품 ${n.toLocaleString()}개${fresh ? ` · 2주 안에 나온 신상 ${fresh.toLocaleString()}개` : ''}` : (s.cats.length ? COPY.priceNone : COPY.pickCategory);
     $('start').disabled = !n;
   }
+  // 가격: 슬라이더(자주 쓰는 구간으로 빠르게) + 직접 입력(1만원 단위로 자유롭게)
+  const PRICE_STOPS = [0, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70, 85, 100, 120, 150, 200, 250, 300, 400, 500];   // 만원, 마지막 칸 = 제한 없음
+  const STOP_LAST = PRICE_STOPS.length - 1;
+  const prLo = $('pr-lo'), prHi = $('pr-hi'), prMin = $('price-min'), prMax = $('price-max'), prBox = $('pr-slider');
+  prLo.max = prHi.max = STOP_LAST;
+  prMax.placeholder = COPY.priceNoLimit;
+  const nearestStop = man => PRICE_STOPS.reduce((best, v, i) => (Math.abs(v - man) < Math.abs(PRICE_STOPS[best] - man) ? i : best), 0);
+  function paintRange() {
+    const a = +prLo.value, b = +prHi.value;
+    prBox.style.setProperty('--a', (a / STOP_LAST * 100) + '%');
+    prBox.style.setProperty('--b', (b / STOP_LAST * 100) + '%');
+    prLo.style.zIndex = a >= STOP_LAST - 1 ? 3 : 1;            // 두 손잡이가 오른쪽 끝에서 겹쳐도 왼쪽 손잡이를 잡을 수 있게
+  }
+  function setPriceUI([lo, hi]) {
+    prMin.value = lo ? lo / 10000 : '';
+    prMax.value = hi === null ? '' : hi / 10000;
+    prLo.value = nearestStop((lo || 0) / 10000);
+    prHi.value = hi === null ? STOP_LAST : Math.max(+prLo.value + 1, nearestStop(hi / 10000));
+    paintRange();
+  }
+  function readPrice() {
+    const lo = Math.max(0, Math.round(+prMin.value || 0));
+    const text = prMax.value.trim();
+    return [lo * 10000, text === '' ? null : Math.max(0, Math.round(+text)) * 10000];
+  }
+  let priceFrame = 0;
+  const priceChanged = () => { if (!priceFrame) priceFrame = requestAnimationFrame(() => { priceFrame = 0; updateCount(); }); };
+  prLo.addEventListener('input', () => {
+    if (+prLo.value >= +prHi.value) prLo.value = +prHi.value - 1;
+    prMin.value = +prLo.value ? PRICE_STOPS[+prLo.value] : '';
+    paintRange(); priceChanged();
+  });
+  prHi.addEventListener('input', () => {
+    if (+prHi.value <= +prLo.value) prHi.value = +prLo.value + 1;
+    prMax.value = +prHi.value === STOP_LAST ? '' : PRICE_STOPS[+prHi.value];
+    paintRange(); priceChanged();
+  });
+  for (const el of [prMin, prMax]) {
+    el.addEventListener('input', () => { const [lo, hi] = readPrice(); prLo.value = nearestStop(lo / 10000); prHi.value = hi === null ? STOP_LAST : nearestStop(hi / 10000); paintRange(); priceChanged(); });
+    el.addEventListener('change', () => {                       // 입력을 마쳤을 때 최소 > 최대면 서로 바꿔 준다
+      const [lo, hi] = readPrice();
+      setPriceUI(hi !== null && hi < lo ? [hi, lo] : [lo, hi]);
+      updateCount();
+    });
+  }
+
   // PC 시작 화면 오른쪽: 신상품·콜라보 위주로 6장 (넓은 화면에서만 보임)
   function renderArt() {
     const art = $('ob-art');
@@ -936,22 +1033,6 @@
   document.querySelectorAll('.auth-tabs [data-mode]').forEach(b => b.addEventListener('click', () => setAuthMode(b.dataset.mode)));
   $('nudge-login').addEventListener('click', () => openAuth('nudge'));
   $('nudge-close').addEventListener('click', () => { $('nudge').hidden = true; });
-  // 사진을 못 불러오면 그 상품은 건너뛴다 (error는 버블링되지 않아 capture로 받음)
-  $('deck').addEventListener('error', e => {
-    if (e.target.tagName !== 'IMG') return;
-    const body = e.target.closest('.pbody'), f = body && body._f;
-    if (!f) return;
-    seen.add(f.id);
-    if (body === bodyBack && nextItem === f) {
-      nextItem = pick();
-      $('shell-back').hidden = !nextItem;
-      if (nextItem) fillBody(bodyBack, nextItem);
-    } else if (body === bodyFront && current === f && phase === 'idle') {
-      shownCount--;
-      peel();
-    }
-  }, true);
-
   // 아이콘 반응 (5-3): 누를 때 1회. 찜 버튼은 자체 튕김을 쓴다
   document.addEventListener('click', e => {
     const b = e.target.closest('button');
