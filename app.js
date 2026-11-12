@@ -45,11 +45,11 @@
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
   }
-  const maskUrl = f => `${MASK_BASE}/${f.mk || (f.mk = maskKey(f.im))}.png`;
+  const maskUrl = f => `${MASK_BASE.replace('{v}', f.cut[6] || 2)}/${f.mk || (f.mk = maskKey(f.im))}.png`;
   // 마스크를 못 불러오면(서버·CORS 문제) 상품이 통째로 가려지므로 미리 받아 보고, 실패하면 원본 그대로 보여 준다
   const maskState = new Map();          // url → 'ok' | 'fail' | 'loading'
   function preloadMask(f, onDone) {
-    if (!MASK_BASE || !f || !f.cut) return;
+    if (!MASK_BASE || !f || !f.cut || f.cut[5] > 0) return;      // 흰 배경 사진은 마스크를 쓰지 않음
     const url = maskUrl(f);
     if (maskState.get(url) === 'ok' || maskState.get(url) === 'fail') return onDone && onDone();
     maskState.set(url, 'loading');
@@ -73,12 +73,15 @@
     return done;
   }
   // box: 사진 칸(배경색 담당), img의 부모 .pic: 내용 영역. fill: 상품이 채울 비율, aspect: 칸 가로/세로(모르면 실제 크기로)
+  // 흰 배경 사진(f.cut[5] = 밝기×1000)은 누끼 없이 원본을 쓰고 배경만 순백이 되게 밝기를 올린다 (가장자리가 깎이지 않아 가장 선명)
+  // 돌려주는 값: 사진이 그려질 가로 길이 ÷ .pic 가로 (받을 사진 크기를 고를 때 씀)
   function layoutPhoto(box, img, f, fill, aspect) {
-    const cut = !!(MASK_BASE && f && f.cut && maskState.get(maskUrl(f)) !== 'fail');
+    const lift = f && f.cut && f.cut[5] > 0 ? f.cut[5] / 1000 : 0;
+    const cut = !!(f && f.cut && (lift || (MASK_BASE && maskState.get(maskUrl(f)) !== 'fail')));
     box.classList.toggle('is-cut', cut);
     box.dataset.theme = 'light';            // 사진 칸은 다크 모드에서도 항상 흰색
     box.style.backgroundColor = cut || !f ? '' : f.bg;
-    if (!cut) { img.removeAttribute('style'); return; }
+    if (!cut) { img.removeAttribute('style'); return 1; }
     const pic = img.parentElement;
     const A = aspect || (pic.clientWidth / Math.max(1, pic.clientHeight)) || 1;
     const [x0, y0, x1, y1, arK] = f.cut, ar = arK / 1000;
@@ -88,8 +91,17 @@
     dw = Math.min(dw, Math.min(1, ar / A) * 2.4);     // 아주 작게 찍힌 상품은 2.4배까지만 (흐려지지 않게)
     const dh = dw / ar;
     const left = 0.5 - dw * (x0 + x1) / 2000, top = 0.5 / A - dh * (y0 + y1) / 2000;
-    const url = `url("${maskUrl(f)}")`;
-    img.style.cssText = `width:${(dw * 100).toFixed(2)}%;height:${(dh * A * 100).toFixed(2)}%;left:${(left * 100).toFixed(2)}%;top:${(top * A * 100).toFixed(2)}%;-webkit-mask-image:${url};mask-image:${url}`;
+    const pos = `width:${(dw * 100).toFixed(2)}%;height:${(dh * A * 100).toFixed(2)}%;left:${(left * 100).toFixed(2)}%;top:${(top * A * 100).toFixed(2)}%`;
+    if (lift) img.style.cssText = pos + (lift > 1.003 ? `;filter:brightness(${lift})` : '');
+    else { const url = `url("${maskUrl(f)}")`; img.style.cssText = `${pos};-webkit-mask-image:${url};mask-image:${url}`; }
+    return dw;
+  }
+  // 받을 사진 크기: 화면에 실제로 그려질 가로 픽셀에 맞춰 Shopify 이미지 폭을 고른다 (작게 받아 늘리면 흐려짐, 썸네일은 작게)
+  const DPR = Math.min(3, window.devicePixelRatio || 1);
+  function sizedSrc(f, cssW) {
+    if (!cssW || !/[?&]width=900\b/.test(f.im)) return f.im;
+    const need = cssW * DPR * 0.95, w = [400, 600, 900, 1200, 1600].find(x => x >= need) || 1600;
+    return w === 900 ? f.im : f.im.replace(/([?&])width=900\b/, `$1width=${w}`);
   }
   const FILL = { feed: 1, thumb: 1, tile: 0.8, art: 0.78 };
   // 전환 시간(ms): CSS 토큰 --tp-dur-peel-*·--tp-dur-nav-*와 맞춘다 (2026-11-12 사용자 요청으로 짧게, 넘김은 대각선)
@@ -273,13 +285,14 @@
     img.classList.remove('is-ready');
     img.removeAttribute('src');                          // 새 사진을 받는 동안 앞 상품 사진이 남아 있지 않게
     img.alt = `${f.b} ${f.t}`;
-    layoutPhoto(photo, img, f, FILL.feed);               // 누끼면 크기 통일, 아니면 사진 배경색에 칸을 맞춤
+    const rel = layoutPhoto(photo, img, f, FILL.feed);   // 누끼·흰 배경이면 크기 통일, 아니면 사진 배경색에 칸을 맞춤
     preloadMask(f, () => { if (body._f === f) layoutPhoto(photo, img, f, FILL.feed); });
     fillInfo(body, f);
-    loadImage(f.im).then(ok => {
+    const src = sizedSrc(f, rel * img.parentElement.clientWidth);
+    loadImage(src).then(ok => {
       if (body._t !== token) return;
       if (!ok) return imageFailed(body, f);
-      img.src = f.im;
+      img.src = src;
       const done = () => { if (body._t === token) img.classList.add('is-ready'); };
       if (img.decode) img.decode().then(done, done); else done();
     });
@@ -293,13 +306,21 @@
     if (nextItem) { fillBody(bodyBack, nextItem); refillSpare(); }
   }
   const takeNext = () => { const f = spare || pick(); spare = null; return f; };
+  // 미리 받을 때도 카드에 넣을 때와 같은 크기의 주소로 (두 번 받지 않게)
+  function feedSrc(f) {
+    const pic = bodyBack.querySelector('.pic'), w = pic.clientWidth, h = pic.clientHeight;
+    if (!w || !f.cut) return sizedSrc(f, w);
+    const [x0, y0, x1, y1, arK] = f.cut, ar = arK / 1000, A = w / Math.max(1, h);
+    const dw = Math.min(FILL.feed / Math.max(0.05, (x1 - x0) / 1000), (FILL.feed / A) * ar / Math.max(0.05, (y1 - y0) / 1000), Math.min(1, ar / A) * 2.4);
+    return sizedSrc(f, dw * w);
+  }
   // 빠르게 넘겨도 사진이 준비되어 있도록 한 장 더 미리 받는다 (다양성 계산은 다음 상품까지 본 것으로)
   function refillSpare() {
     if (spare || !nextItem) return;
     shownLog.push({ b: nextItem.b, m: nextItem.m, s: nextItem.s, c: nextItem.c });
     spare = pick();
     shownLog.pop();
-    if (spare) { loadImage(spare.im); preloadMask(spare); }
+    if (spare) { loadImage(feedSrc(spare)); preloadMask(spare); }
   }
   function playBadges(root) { const t = root.querySelector('.tags'); t.classList.remove('play'); void t.offsetWidth; t.classList.add('play'); }
 
@@ -446,9 +467,10 @@
     btn.setAttribute('aria-label', `${f.b} ${f.t}`);
     const ph = document.createElement('div'), pic = document.createElement('div'), img = document.createElement('img');
     ph.className = 'hph'; pic.className = 'pic';
-    img.alt = ''; img.referrerPolicy = 'no-referrer'; img.src = f.im;
+    img.alt = ''; img.referrerPolicy = 'no-referrer';
     pic.appendChild(img); ph.appendChild(pic); btn.appendChild(ph);
-    layoutPhoto(ph, img, f, FILL.thumb, square ? 1 : 0.79);
+    const rel = layoutPhoto(ph, img, f, FILL.thumb, square ? 1 : 0.79);
+    img.src = sizedSrc(f, rel * 0.8 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue(square ? '--tp-hm-sq' : '--tp-hm-tw')) || 82));
     preloadMask(f, () => layoutPhoto(ph, img, f, FILL.thumb, square ? 1 : 0.79));
     if (square) return btn;
     if (f.x || isNew(f)) {
@@ -923,9 +945,8 @@
     const a = document.createElement('a');
     a.className = 'like-item'; a.href = f.u; a.target = '_blank'; a.rel = 'noopener';
     a.innerHTML = `<div class="ph" data-theme="light"><div class="pic"><img loading="lazy" referrerpolicy="no-referrer" alt=""></div><div class="tile-tags">${f.x ? '<span class="tp-badge tp-badge--sm tp-badge--collab">COLLAB</span>' : ''}${isNew(f) ? '<span class="tp-badge tp-badge--sm tp-badge--new">NEW</span>' : ''}</div></div><div class="tx"><span class="sub"></span><b></b><span class="t"></span><div class="pr"></div></div>`;
-    a.querySelector('img').src = f.im;
     const ph = a.querySelector('.ph'), pimg = a.querySelector('img');
-    layoutPhoto(ph, pimg, f, FILL.tile, 1);                       // 정사각형 칸
+    pimg.src = sizedSrc(f, layoutPhoto(ph, pimg, f, FILL.tile, 1) * 180);   // 정사각형 칸 (약 180px)
     preloadMask(f, () => layoutPhoto(ph, pimg, f, FILL.tile, 1));
     a.querySelector('.sub').textContent = `${CAT_LABEL[f.c] || ''} · ${f.s || '기타'}`;
     a.querySelector('b').textContent = f.b;
