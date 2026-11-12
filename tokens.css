@@ -281,27 +281,32 @@
   --tp-dur-fade-2: 240ms;       /* 홈으로 돌아올 때 페이드 */
   --tp-dur-fade-3: 120ms;       /* 도장 페이드 */
   --tp-dur-rise: 420ms;         /* 홈으로 돌아올 때, 되돌리기 */
-  --tp-dur-nope-exit: 280ms;
+  --tp-dur-nope-exit: 260ms;
+  --tp-dur-nav-out: 240ms;      /* 태핑 → 홈: 덱 퇴장 */
+  --tp-dur-nav-rise: 320ms;     /* 태핑 → 홈: 오늘 카드·목록 등장 */
+  --tp-toast-top: 76px;         /* 알림 위치: 상단 바 아래 */
 
-  /* Peel 전환 (약 620ms, 브랜드 시그니처로 승인된 예외) */
+  /* Peel 전환 (약 430ms, 2026-11-12 사용자 요청: 더 빠르게 + 오른쪽 아래 → 왼쪽 위 대각선) */
   --tp-peel: 104px;
+  --tp-peel-exit: 180px;        /* 빠지는 동안 커지는 접힘 */
+  --tp-peel-x: -112%;  --tp-peel-y: -108%;  --tp-peel-r: -12deg;
   --tp-back-y: 18px;
   --tp-back-scale: .94;
-  --tp-dur-peel-press: 140ms;
-  --tp-dur-peel-exit: 260ms;
-  --tp-dur-peel-back: 380ms;
+  --tp-dur-peel-press: 90ms;
+  --tp-dur-peel-exit: 320ms;
+  --tp-dur-peel-back: 300ms;
   --tp-dur-follow: 200ms;       /* 기울기 따라가기 */
   --ease-icon: cubic-bezier(.33, 1, .68, 1);
 }
 @media (prefers-reduced-motion: reduce) {
-  :root { --tp-dur-bar: 1ms; --tp-dur-fade: 1ms; --tp-dur-fade-2: 1ms; --tp-dur-fade-3: 1ms; --tp-dur-rise: 1ms; --tp-dur-nope-exit: 1ms; --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; --tp-dur-fold: 1ms; }
+  :root { --tp-dur-nav-out: 1ms; --tp-dur-nav-rise: 1ms; --tp-dur-bar: 1ms; --tp-dur-fade: 1ms; --tp-dur-fade-2: 1ms; --tp-dur-fade-3: 1ms; --tp-dur-rise: 1ms; --tp-dur-nope-exit: 1ms; --tp-dur-peel-press: 1ms; --tp-dur-peel-exit: 1ms; --tp-dur-peel-back: 1ms; --tp-dur-follow: 1ms; --tp-dur-tile: 1ms; --tp-dur-fold: 1ms; }
 }
 
 @media (max-width: 379px), (max-height: 640px) {
   :root { --tab-b: 12px; --tab-gap: 0px; --tp-hm-card: 296px; --tp-hm-pad: 20px; --tp-hm-label: 12px; --tp-hm-n3: 92px; --tp-hm-n4: 76px; --tp-hm-n5: 64px; --tp-hm-sent: 22px; --tp-hm-zero: 28px; --tp-hm-zero-sub: 14px; --tp-hm-go: 13px; --tp-hm-line: 16px; --tp-hm-set: 14px; --tp-hm-fold: 64px; --tp-hm-fold-up: 80px; --tp-hm-fold-go: 92px; --tp-hm-tw: 72px; --tp-hm-th: 92px; --tp-hm-sq: 56px; }
 }
 @media (min-width: 1024px) {
-  :root { --tp-hm-pad: 48px; --tp-hm-label: 15px; --tp-hm-n3: 200px; --tp-hm-n4: 168px; --tp-hm-n5: 140px; --tp-hm-sent: 40px; --tp-hm-zero: 56px; --tp-hm-zero-sub: 18px; --tp-hm-go: 16px; --tp-hm-line: 28px; --tp-hm-set: 17px; --tp-hm-fold: 96px; --tp-hm-fold-up: 120px; --tp-hm-fold-go: 136px; --tp-hm-title: 20px; --tp-hm-sec: 40px; --tp-hm-tw: 128px; --tp-hm-th: 160px; --tp-hm-tg: 12px; --tp-hm-sq: 88px; }
+  :root { --tp-toast-top: 92px; --tp-peel-exit: 260px; --tp-hm-pad: 48px; --tp-hm-label: 15px; --tp-hm-n3: 200px; --tp-hm-n4: 168px; --tp-hm-n5: 140px; --tp-hm-sent: 40px; --tp-hm-zero: 56px; --tp-hm-zero-sub: 18px; --tp-hm-go: 16px; --tp-hm-line: 28px; --tp-hm-set: 17px; --tp-hm-fold: 96px; --tp-hm-fold-up: 120px; --tp-hm-fold-go: 136px; --tp-hm-title: 20px; --tp-hm-sec: 40px; --tp-hm-tw: 128px; --tp-hm-th: 160px; --tp-hm-tg: 12px; --tp-hm-sq: 88px; }
 }
 
 /* ---------- 5. v1.0 이름 호환 (기존 화면이 깨지지 않게) ---------- */

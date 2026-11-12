@@ -91,7 +91,9 @@
     const url = `url("${maskUrl(f)}")`;
     img.style.cssText = `width:${(dw * 100).toFixed(2)}%;height:${(dh * A * 100).toFixed(2)}%;left:${(left * 100).toFixed(2)}%;top:${(top * A * 100).toFixed(2)}%;-webkit-mask-image:${url};mask-image:${url}`;
   }
-  const FILL = { feed: 1, thumb: 1, tile: 0.8, art: 0.78 };   // feed·thumb: 사진 칸의 80% 상자(.pic)를 채움
+  const FILL = { feed: 1, thumb: 1, tile: 0.8, art: 0.78 };
+  // 전환 시간(ms): CSS 토큰 --tp-dur-peel-*·--tp-dur-nav-*와 맞춘다 (2026-11-12 사용자 요청으로 짧게, 넘김은 대각선)
+  const T = { peelPress: 90, peel: 430, nav: 460, navFold: 300, nopeStamp: 180, nope: 470, undo: 460 };   // feed·thumb: 사진 칸의 80% 상자(.pic)를 채움
 
   // ---------- 저장소 (사생활 보호 모드 등에서 실패해도 동작) ----------
   const store = {
@@ -139,16 +141,19 @@
     const a = [...(s.prices || [0, 1, 2, 3])].sort((x, y) => x - y);
     return [PRICE_EDGE[a[0]], PRICE_EDGE[a[a.length - 1] + 1]];
   }
-  function matches(f, s) {
-    if (s.gender === 'men' && f.g === 'women') return false;
-    if (s.gender === 'women' && f.g === 'men') return false;
-    const [lo, hi] = priceRange(s);
-    return s.cats.includes(f.c) && f.p >= lo && (hi === null || f.p <= hi);
+  function compileMatch(s) {
+    const [lo, hi] = priceRange(s), cats = new Set(s.cats), g = s.gender;
+    return f => !(g === 'men' && f.g === 'women') && !(g === 'women' && f.g === 'men') && cats.has(f.c) && f.p >= lo && (hi === null || f.p <= hi);
   }
+  const matchCache = new WeakMap();
+  function matches(f, s) { let ok = matchCache.get(s); if (!ok) matchCache.set(s, ok = compileMatch(s)); return ok(f); }
+  // 지금 설정에 맞는 상품 (설정 객체가 바뀔 때만 다시 계산)
+  let baseFor = null, baseList = [];
+  function base() { if (baseFor !== settings) { baseFor = settings; baseList = settings ? FEED.filter(compileMatch(settings)) : []; } return baseList; }
   // 찜한 상품·싫어요 누른 상품·이미 본 상품은 다시 보여 주지 않는다 (찜은 찜 목록에서 보기)
   function pool() {
     const liked = new Set(likes);
-    return FEED.filter(f => matches(f, settings) && !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem && f !== spare);
+    return base().filter(f => !seen.has(f.id) && !disliked.has(f.id) && !liked.has(f.id) && f !== current && f !== nextItem && f !== spare);
   }
 
   // ---------- 다양성: 같은 브랜드·몰·세부 분류가 연달아 나오지 않게 ----------
@@ -184,7 +189,7 @@
   function pick() {
     const list = pool();
     if (!list.length) return null;
-    const sample = diverse(list.length > 800 ? shuffle(list).slice(0, 800) : list);
+    const sample = diverse(list.length > 800 ? sampleN(list, 800) : list);
 
     // 콜드 스타트(비로그인 포함): 반응 10번 전까지는 카테고리를 돌아가며, 신상품·콜라보일수록 자주
     if (interactions() < 10) {
@@ -238,11 +243,17 @@
     store.set('profile', profile);
     store.set('events', events);
   }
-  function persist() {
-    if (!me) return;
-    saveLocal();
-    acct.saveState({ likes, disliked: [...disliked].slice(-5000), profile, settings });
+  let saveT = 0, seenDirty = false, stateDirty = false;
+  function flushSaves() {
+    clearTimeout(saveT); saveT = 0;
+    if (seenDirty) { seenDirty = false; store.set('seen', [...seen].slice(-4000)); }
+    if (stateDirty) { stateDirty = false; if (me) { saveLocal(); acct.saveState({ likes, disliked: [...disliked].slice(-5000), profile, settings }); } }
   }
+  const scheduleSave = () => { if (!saveT) saveT = setTimeout(flushSaves, 700); };
+  function persist() { if (!me) return; stateDirty = true; scheduleSave(); }
+  const leavePage = () => { flushSaves(); acct.flush && acct.flush(); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leavePage(); });
+  window.addEventListener('pagehide', leavePage);
 
   // ---------- 화면: 카드 2장 (뒤 카드에 다음 상품을 항상 미리 깔아 둔다) ----------
   function fillInfo(root, f) {
@@ -297,7 +308,7 @@
     current = f;
     shownAt = Date.now();
     seen.add(f.id);
-    store.set('seen', [...seen].slice(-4000));
+    seenDirty = true; scheduleSave();
     shownLog.push({ b: f.b, m: f.m, s: f.s, c: f.c });
     if (shownLog.length > 30) shownLog.shift();
     if (!filled) fillBody(bodyFront, f);
@@ -361,7 +372,7 @@
     $('tab-deck').setAttribute('aria-current', v === 'tap' ? 'page' : 'false');
   }
   const setFold = state => { $('today').dataset.fold = state; };
-  const refreshTotal = () => { poolTotal = FEED.filter(f => matches(f, settings)).length; };
+  const refreshTotal = () => { poolTotal = base().length; };
   function relayoutDeck() { for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed); }
   function enterApp() {
     $('onboard').hidden = true;
@@ -407,7 +418,7 @@
       setView('tap');
       navBusy = false;
       if (pendingBack) { pendingBack = false; goHome(true); }
-    }, 620);
+    }, T.nav);
   }
   function goHome(fromPop) {
     if (navBusy) { if (fromPop && feedEl.dataset.anim === 'to-tap') pendingBack = true; return; }
@@ -419,8 +430,8 @@
     navBusy = true;
     setFold('off');
     feedEl.dataset.anim = 'to-home';
-    setTimeout(() => setFold('on'), 380);
-    setTimeout(() => { delete feedEl.dataset.anim; setView('home'); navBusy = false; }, 620);
+    setTimeout(() => setFold('on'), T.navFold);
+    setTimeout(() => { delete feedEl.dataset.anim; setView('home'); navBusy = false; }, T.nav);
   }
   setInterval(() => {                                    // 오늘 카드 모서리: 3200ms마다 들썩
     if (view !== 'home' || navBusy || feedEl.hidden || reduceMotion.matches || $('today').dataset.fold !== 'on') return;
@@ -455,7 +466,7 @@
     return btn;
   }
   function renderHome() {
-    const now = new Date(Date.now() + 9 * 36e5), pool = FEED.filter(f => matches(f, settings) && !disliked.has(f.id));
+    const now = new Date(Date.now() + 9 * 36e5), pool = base().filter(f => !disliked.has(f.id));
     const today = pool.filter(f => f.f === TODAY), recent = pool.filter(isNew), n = today.length;
     $('hm-label').textContent = COPY.homeLabel(now.getUTCMonth() + 1, now.getUTCDate());
     $('hm-main').hidden = !n;
@@ -515,31 +526,38 @@
     show(nextItem, true);
     saveResume();
   }
-  // Peel 전환 (5-1): 모서리 접힘 140ms → 위로 빠짐 260ms, 뒤 카드 올라옴 380ms → 620ms에 앞뒤 교체. 전환 중 탭은 무시
+  // Peel 전환 (2026-11-12 사용자 요청으로 변경): 모서리 접힘 90ms → 오른쪽 아래에서 왼쪽 위로 대각선으로 빠지며 접힘이 커짐 320ms,
+  // 뒤 카드 올라옴 300ms → 430ms에 앞뒤 교체. 전환 중에 다시 누르면 넘기던 장을 바로 끝내고 다음 장을 넘긴다(연타가 사라지지 않게)
+  let peelFinish = null;
   function peel() {
     if (phase !== 'idle' || !current) return;
     hideUndo();
     if (reduceMotion.matches) return swapToNext();
     const gen = ++peelGen;
     setPhase('peel');
-    setTimeout(() => { if (gen === peelGen) setPhase('exit'); }, 140);
-    setTimeout(() => {
+    setTimeout(() => { if (gen === peelGen) setPhase('exit'); }, T.peelPress);
+    const finish = () => {
       if (gen !== peelGen) return;
+      peelGen++; peelFinish = null;
       setPhase('reset');
       swapToNext();
       void $('viewer').offsetWidth;       // 전환 없이 원위치한 상태를 확정한 뒤 idle로 (다음 프레임을 기다리지 않음)
       setPhase('idle');
-    }, 620);
+    };
+    peelFinish = finish;
+    setTimeout(finish, T.peel);
   }
 
   // ---------- 행동 ----------
   const ready = () => !!current && phase === 'idle';
   const dwell = () => Date.now() - shownAt;
   function onSkip() {
+    if (peelFinish && (phase === 'peel' || phase === 'exit')) peelFinish();   // 연타: 넘기던 장을 바로 끝냄
     if (!ready()) return;
     hideCoach();
-    if (me) record(current, 'skip', -0.15, dwell()); else maybeNudge();
-    peel();
+    const f = current, d = dwell();
+    peel();                                                              // 화면 반응이 먼저, 기록은 그 다음
+    if (me) record(f, 'skip', -0.15, d); else maybeNudge();
   }
   // 찜은 하트만 켜고 끄며 다음 상품으로 넘어가지 않는다 (넘기기는 화면 탭·클릭으로만)
   let likeTimer;
@@ -551,11 +569,10 @@
     likeTimer = setTimeout(() => $('btn-like').classList.remove('pop'), 170);
     const f = current, liked = likes.includes(f.id);
     if (liked) likes = likes.filter(id => id !== f.id); else likes.unshift(f.id);
-    record(f, liked ? 'unlike' : 'like', liked ? -1 : 1, dwell());   // 찜 취소 시 학습도 되돌림
-    if (!liked) navigator.vibrate?.(12);
-    toast(liked ? '찜을 취소했어요' : '찜 목록에 담았어요');
-    updateLikeCount();
     setLikeBtn(!liked);
+    if (!liked) navigator.vibrate?.(12);
+    updateLikeCount();
+    record(f, liked ? 'unlike' : 'like', liked ? -1 : 1, dwell());   // 찜 취소 시 학습도 되돌림
   }
   function onDislike() {
     if (!ready()) return;
@@ -575,7 +592,7 @@
     btn.classList.add('press');
     setTimeout(() => btn.classList.remove('press'), 180);
     setPhase('nope');
-    setTimeout(() => { if (gen === peelGen) setPhase('nope-exit'); }, 240);
+    setTimeout(() => { if (gen === peelGen) setPhase('nope-exit'); }, T.nopeStamp);
     setTimeout(() => {
       if (gen !== peelGen) return;
       setPhase('reset');
@@ -583,7 +600,7 @@
       void $('viewer').offsetWidth;
       setPhase('idle');
       showUndo();
-    }, 680);
+    }, T.nope);
   }
   let lastDislike = null, undoTimer = 0;
   function showUndo() {
@@ -625,7 +642,7 @@
     setPhase('undo-pre');
     void $('viewer').offsetWidth;
     setPhase('undo');
-    setTimeout(() => { if (gen === peelGen) setPhase('idle'); }, 460);
+    setTimeout(() => { if (gen === peelGen) setPhase('idle'); }, T.undo);
   }
   let buyTimer;
   function onBuy() {
@@ -686,8 +703,8 @@
   }
   function updateCount() {
     const s = readOnboard();
-    const n = s.cats.length ? FEED.filter(f => matches(f, s)).length : 0;
-    const fresh = n ? FEED.filter(f => matches(f, s) && isNew(f)).length : 0;
+    let n = 0, fresh = 0;                                // 한 번만 돌면서 개수와 신상 수를 같이 센다
+    if (s.cats.length) { const ok = compileMatch(s); for (const f of FEED) if (ok(f)) { n++; if (isNew(f)) fresh++; } }
     $('ob-count').textContent = n ? `지금 조건에 맞는 상품 ${n.toLocaleString()}개${fresh ? ` · 2주 안에 나온 신상 ${fresh.toLocaleString()}개` : ''}` : (s.cats.length ? COPY.priceNone : COPY.pickCategory);
     $('start').disabled = !n;
   }
@@ -1168,6 +1185,8 @@
   let toastTimer;
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('is-on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('is-on'), 2200); }
   const count = (a, v) => a.filter(x => x === v).length;
+  // 앞에서 n개만 섞어 뽑기 (전체를 섞지 않음, a는 바뀜)
+  function sampleN(a, n) { for (let i = 0; i < n; i++) { const j = i + Math.floor(Math.random() * (a.length - i)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); }
   function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
   // 가중치에 비례해 하나 고르기 (신상품·콜라보일수록 잘 뽑힘)
   function weighted(list, w) {
@@ -1194,7 +1213,8 @@
   $('tab-deck').addEventListener('click', () => goTap());
   $('logo-home').addEventListener('click', () => goHome());
   $('today-hit').addEventListener('click', () => goTap());
-  $('hm-change').addEventListener('click', openSettings);
+  document.querySelector('.today__set').addEventListener('click', openSettings);
+  document.addEventListener('touchstart', () => {}, { passive: true });   // iOS Safari에서 누르는 순간 :active 반응이 보이게
   $('hm-all').addEventListener('click', openLikes);
   $('likes').addEventListener('close', () => { if (!$('feed').hidden) renderHome(); });
   $('close-likes').addEventListener('click', () => closeSheet('likes'));
