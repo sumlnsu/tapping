@@ -13,4 +13,4 @@
 - 익명 이용 통계(방문·넘긴 장수·찜·구매 클릭)를 모아 서비스 지표로 씁니다. 내 계정 시트에서 끌 수 있고, 주소 뒤에 `?me=1`을 한 번 붙여 열면 그 기기는 운영자 기기로 표시되어 지표에서 빠집니다 (`privacy.html`)
 - 상품 이미지·가격·링크의 권리는 각 브랜드와 판매처에 있으며, 구매는 각 판매처에서 이루어집니다
 
-파일: `index.html` 화면 · `app.js` 피드·추천·Peel 전환 · `account.js` 로그인·동기화 · `copy.js` 화면 문구(임시 문구는 여기만 수정) · `config.js` Supabase 주소/공개 키 · `stats.js` 익명 이용 통계 · `feed-start.json`·`feed.json`·`links.json` 상품 데이터 (`feed.js`는 v1.1까지 쓰던 옛 형식) · `privacy.html` 개인정보 처리방침 · `style.css` 배치 · `tokens.css`·`components.css` SUMIN Design System 2.0 사본(볼트 팔레트 + 태핑 브랜드 키트) · `brand/` 로고·아이콘·빈 화면 그림
+파일: `index.html` 화면 · `app.js` 피드·추천·Peel 전환 · `account.js` 로그인·동기화 · `copy.js` 화면 문구(임시 문구는 여기만 수정) · `config.js` Supabase 주소/공개 키 · `stats.js` 익명 이용 통계 · `feed-start.json`·`feed.json`·`links.json` 상품 데이터 · `privacy.html` 개인정보 처리방침 · `style.css` 배치 · `tokens.css`·`components.css` SUMIN Design System 2.0 사본(볼트 팔레트 + 태핑 브랜드 키트) · `brand/` 로고·아이콘·빈 화면 그림
