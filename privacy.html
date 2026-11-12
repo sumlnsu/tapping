@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko" data-palette="volt" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>개인정보 처리방침 · 태핑</title>
+<link rel="icon" href="brand/icon/favicon.svg" type="image/svg+xml">
+<script>(function(){try{var t=localStorage.getItem('tapping.theme'),r=document.documentElement;if(t==='light')r.setAttribute('data-theme','light');else if(t==='system')r.removeAttribute('data-theme');}catch(e){}})();</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { margin: 0; background: var(--c-bg); color: var(--c-ink-2); font: 400 var(--t-body)/1.7 var(--f-sans); }
+  main { box-sizing: border-box; max-width: 720px; margin: 0 auto; padding: var(--s-6) var(--s-4) var(--s-8); }
+  a { color: var(--c-ink); text-underline-offset: 3px; }
+  .back { display: inline-block; margin-bottom: var(--s-5); color: var(--c-muted); font: 600 var(--t-label)/1 var(--f-sans); text-decoration: none; }
+  h1 { margin: 0 0 var(--s-2); color: var(--c-ink); font: 800 var(--t-h2, 28px)/1.25 var(--f-sans); letter-spacing: -.02em; }
+  h2 { margin: var(--s-6) 0 var(--s-2); color: var(--c-ink); font: 750 var(--t-body-lg)/1.4 var(--f-sans); }
+  .meta { margin: 0; color: var(--c-muted); font-size: var(--t-caption); }
+  ul { margin: 0; padding-left: 1.2em; }
+  li + li { margin-top: var(--s-1); }
+  table { width: 100%; margin-top: var(--s-2); border-collapse: collapse; font-size: var(--t-label); }
+  th, td { padding: var(--s-2) var(--s-2) var(--s-2) 0; border-bottom: 1px solid var(--c-line); text-align: left; vertical-align: top; }
+  th { color: var(--c-ink); font-weight: 700; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">← 태핑으로</a>
+  <h1>개인정보 처리방침</h1>
+  <p class="meta">베타 서비스용 · 시행 2026년 11월 12일</p>
+
+  <h2>1. 모으는 정보</h2>
+  <table>
+    <tr><th>회원</th><td>이메일, 비밀번호(암호화되어 로그인 서비스에만 저장), 찜·별로예요·취향 점수·시작 설정, 넘김·찜·구매 클릭 기록</td></tr>
+    <tr><th>모든 방문자<br>(익명 이용 통계)</th><td>기기마다 만든 임의 번호, 방문 번호, 본 상품·찜·별로예요·구매 클릭, 기기 종류(휴대폰·태블릿·PC), 들어온 사이트 주소, 첫 화면 로딩 시간, 앱 버전. <b>이름·이메일·IP 주소·위치는 통계에 저장하지 않아요.</b> 로그인한 상태면 회원 번호가 함께 기록돼요.</td></tr>
+  </table>
+
+  <h2>2. 쓰는 곳</h2>
+  <ul>
+    <li>로그인, 찜 목록 저장, 여러 기기에서 같은 찜 보기</li>
+    <li>반응을 학습해 취향에 맞는 상품 추천</li>
+    <li>방문자 수·재방문율·많이 본 상품 같은 서비스 개선 지표</li>
+  </ul>
+
+  <h2>3. 보관 기간</h2>
+  <ul>
+    <li>회원 정보: 탈퇴할 때까지. 탈퇴 기능을 준비하는 동안에는 요청하시면 바로 지워 드려요.</li>
+    <li>익명 이용 통계: 모은 날부터 2년</li>
+  </ul>
+
+  <h2>4. 맡겨서 처리하는 곳</h2>
+  <ul>
+    <li>Supabase — 로그인, 찜·반응 기록, 이용 통계 저장</li>
+    <li>GitHub Pages — 사이트 호스팅 (접속 기록은 GitHub 정책에 따름)</li>
+    <li>Cloudflare R2 — 상품 사진 배경 처리용 이미지 (개인정보 없음)</li>
+  </ul>
+
+  <h2>5. 고를 수 있는 것</h2>
+  <ul>
+    <li>익명 이용 통계 끄기: 오른쪽 위 사람 아이콘 → <b>익명 이용 통계 보내기</b> 끄기</li>
+    <li>이 기기의 기록 지우기: 브라우저 설정에서 이 사이트의 데이터 삭제</li>
+  </ul>
+
+  <h2>6. 판매처로 이동한 뒤</h2>
+  <p>구매하러 가기를 누르면 각 판매처 사이트로 이동해요. 그 뒤의 정보 처리는 해당 판매처의 방침을 따라요.</p>
+
+  <h2>7. 바뀔 때</h2>
+  <p>정식 서비스 전환 등으로 내용이 바뀌면 이 페이지와 앱 안에서 먼저 알려 드려요.</p>
+</main>
+</body>
+</html>

@@ -20,6 +20,8 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script>(function(){try{var t=localStorage.getItem('tapping.theme'),r=document.documentElement;if(t==='light')r.setAttribute('data-theme','light');else if(t==='system')r.removeAttribute('data-theme');}catch(e){}})();</script>
+<!-- 상품 데이터는 글꼴·스타일보다 먼저 받기 시작 (v1.2: 첫 화면용 feed-start.json 약 0.6MB → 첫 화면 뒤에 feed.json 전체·links.json 판매처 주소) -->
+<script>window.TP_FEED_READY=fetch('feed-start.json').then(function(r){if(r.ok)return r.json();throw 0}).catch(function(){return fetch('feed.json').then(function(r){return r.ok?r.json():null})}).catch(function(){return null});</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="components.css">
@@ -255,6 +257,7 @@
         <div class="filters sub" id="like-subs" role="tablist" aria-label="세부 분류" hidden></div>
       </div>
       <div id="like-list"></div>
+      <div class="undo-toast likes-undo" id="likes-undo" role="status" aria-live="polite"><svg class="undo-ic" data-i="trash" viewBox="0 0 24 24" aria-hidden="true"><use href="brand/icons/sprite.svg#trash"/></svg><span>찜에서 뺐어요</span><button class="undo-btn" id="likes-undo-btn" type="button">되돌리기</button></div>
       <div class="state" id="likes-empty">
         <div class="state__art" data-art="empty-wishlist"><picture><source media="(prefers-color-scheme: dark)" srcset="brand/states/empty-wishlist-dark.svg"><img src="brand/states/empty-wishlist-light.svg" alt="" width="160" height="160"></picture></div>
         <h3 class="state__t" data-copy="emptyLikesTitle"></h3>
@@ -311,6 +314,10 @@
         </section>
         <button class="btn btn--secondary btn--lg btn--block" id="sign-out" type="button">로그아웃</button>
       </div>
+      <div class="privacy">
+        <label class="check"><input class="switch" id="stats-on" type="checkbox" checked><span>익명 이용 통계 보내기</span></label>
+        <p class="fine">방문·넘긴 장수·찜·구매 클릭 수를 이름 없이 세어 서비스 개선에 써요. <a href="privacy.html" target="_blank" rel="noopener">개인정보 처리방침</a></p>
+      </div>
     </div>
   </dialog>
 
@@ -319,7 +326,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="feed.js"></script>
+<script src="stats.js"></script>
 <script src="account.js"></script>
 <script src="app.js"></script>
 </body>

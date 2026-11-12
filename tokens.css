@@ -290,8 +290,8 @@
   --tp-peel: 104px;
   --tp-peel-exit: 180px;        /* 빠지는 동안 커지는 접힘 */
   --tp-peel-x: -112%;  --tp-peel-y: -108%;  --tp-peel-r: -12deg;
-  --tp-back-y: 18px;
-  --tp-back-scale: .94;
+  --tp-back-y: 0px;             /* v1.2 (2026-11-12): 쉬는 동안 뒤 카드가 카드 아래로 비치지 않게 (하단 바와 겹쳐 복잡해 보임) — 넘길 때만 드러남 */
+  --tp-back-scale: .95;
   --tp-dur-peel-press: 90ms;
   --tp-dur-peel-exit: 320ms;
   --tp-dur-peel-back: 300ms;

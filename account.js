@@ -32,6 +32,8 @@ window.TP_ACCOUNT = (() => {
   }) : null;
 
   let user = null, role = 'user';
+  let accessToken = null;                    // 이용 통계(stats.js)가 로그인 회원 번호를 붙일 때 씀 (v1.2)
+  sb?.auth.onAuthStateChange((ev, session) => { accessToken = session?.access_token || null; });
 
   async function setUser(u) {
     user = u || null;
@@ -149,6 +151,7 @@ window.TP_ACCOUNT = (() => {
   return {
     ready, remember, restore, signIn, signUp, signOut, onSignedOut,
     loadState, saveState, track, flush, adminStats, message,
+    token: () => (user ? accessToken : null),
     get user() { return user; },
     get isAdmin() { return role === 'admin'; }
   };
