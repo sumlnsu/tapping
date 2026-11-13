@@ -1382,9 +1382,9 @@
   }, true);
   document.addEventListener('animationend', e => { if (e.target.classList && e.target.classList.contains('ico')) e.target.classList.remove('play'); }, true);
 
-  // 기울기 깊이 (5-2): 카드는 기울고 사진은 반대로, 시작 화면 아이콘은 세 겹이 서로 다른 깊이로 움직인다
+  // 기울기 깊이 (5-2): 시작 화면 아이콘은 세 겹이 서로 다른 깊이로 움직인다
+  // 상품 카드 기울기는 2026-11-13 사용자 요청으로 뺌 (마우스를 올리면 3D 변형 때문에 카드 전체가 흐려짐)
   const setPair = (el, a, b, x, y) => { el.style.setProperty(a, x.toFixed(3)); el.style.setProperty(b, y.toFixed(3)); };
-  const tiltCard = (x, y) => setPair($('viewer'), '--tx', '--ty', x, y);
   const tiltTile = (x, y) => setPair($('ob-tile'), '--dx', '--dy', x, y);
   const followPointer = (area, tilt) => {
     area.addEventListener('pointermove', e => {
@@ -1393,19 +1393,19 @@
     });
     area.addEventListener('pointerleave', () => tilt(0, 0));
   };
-  if (finePointer && !reduceMotion.matches) { followPointer($('deck'), tiltCard); followPointer($('onboard'), tiltTile); }
+  if (finePointer && !reduceMotion.matches) followPointer($('onboard'), tiltTile);
 
-  // 휴대폰은 자이로로: 아이폰은 '시작하기'(재방문이면 첫 탭)에서 허용을 물어보고, 거절하면 다시 묻지 않는다
+  // 휴대폰은 자이로로 (시작 화면 아이콘만): 아이폰은 '시작하기'에서 허용을 물어보고, 거절하면 다시 묻지 않는다
   const gyro = { on: false, g0: null, b0: null, x: 0, y: 0, raf: 0 };
   const unit = v => Math.max(-1, Math.min(1, v));
   function onOrient(e) {
-    if (e.gamma === null || e.beta === null) return;
+    if (e.gamma === null || e.beta === null || $('onboard').hidden) return;
     if (gyro.g0 === null) { gyro.g0 = e.gamma; gyro.b0 = e.beta; }
     gyro.g0 += (e.gamma - gyro.g0) * .02;     // 기준 자세가 천천히 따라와서 어떤 자세로 들어도 가운데로 돌아온다
     gyro.b0 += (e.beta - gyro.b0) * .02;
     gyro.x = unit((e.gamma - gyro.g0) / 16);
     gyro.y = unit((e.beta - gyro.b0) / 16);
-    if (!gyro.raf) gyro.raf = requestAnimationFrame(() => { gyro.raf = 0; tiltCard(gyro.x, gyro.y); tiltTile(gyro.x, gyro.y); });
+    if (!gyro.raf) gyro.raf = requestAnimationFrame(() => { gyro.raf = 0; tiltTile(gyro.x, gyro.y); });
   }
   function startGyro() {
     const D = window.DeviceOrientationEvent;
@@ -1415,7 +1415,7 @@
     D.requestPermission().then(s => { if (s === 'granted') listen(); else store.set('gyroDenied', true); }).catch(() => { /* 사용자 동작 밖에서 호출된 경우 */ });
   }
   if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') startGyro();
-  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#start, #stage')) startGyro(); }, true);
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#start')) startGyro(); }, true);
 
   // 빈 화면 그림 (5-6): 파일을 그대로 쓰되 접힌 모서리만 따로 움직이도록 문서 안에 펼친다 (실패하면 <img> 그대로)
   const darkScheme = matchMedia('(prefers-color-scheme: dark)');
