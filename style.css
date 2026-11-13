@@ -61,7 +61,8 @@ button { cursor: pointer; }
 .onboard.is-edit .ob-logo, .onboard.is-edit .ob-hero, .onboard.is-edit .ob-head .lead { display: none; }
 .onboard.is-edit .ob-edit-title { display: block; }
 .ob-title { font-size: clamp(2.25rem, 1.6rem + 3vw, var(--t-display)); }
-.ob-title mark { padding: 0 .1em; border-radius: var(--r-xs); background: var(--c-brand); color: var(--c-on-brand); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+/* 형광펜: 줄 간격(1.05)보다 배경이 커서 윗줄을 덮던 문제(2026-11-13 사용자 제보) → 독립 상자로 만들고 위쪽을 띄움 */
+.ob-title mark { display: inline-block; margin-top: .12em; padding: .02em .12em .06em; border-radius: var(--r-xs); background: var(--c-brand); color: var(--c-on-brand); line-height: 1.1; }
 .ob-head .lead { margin-top: var(--s-3); color: var(--c-muted); }
 .ob-hero { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
 .ob-hero .ob-title { min-width: 0; }
@@ -160,7 +161,7 @@ button { cursor: pointer; }
 .face { --fold: 0px; position: absolute; inset: 0; overflow: hidden; border-radius: var(--r-xl); background: var(--c-surface); clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--fold)), calc(100% - var(--fold)) 100%, 0 100%); transition: clip-path var(--tp-dur-fold) var(--ease-icon); }
 .deck.enter { animation: tp-state-in 420ms var(--ease-out); }
 .back { box-shadow: var(--tp-shadow-card-back); transform: translateY(var(--tp-back-y)) scale(var(--tp-back-scale)); transform-origin: 50% 100%; }
-.back .tags, .back .seq { visibility: hidden; }       /* 배지·순번은 맨 앞에 올라온 뒤 등장 */
+.back .tags { visibility: hidden; }       /* 배지는 맨 앞에 올라온 뒤 등장 */
 
 .hit { position: absolute; inset: 0; z-index: 1; outline: none; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
 .hit:focus-visible { border-radius: inherit; box-shadow: inset var(--focus-ring); }
@@ -170,7 +171,6 @@ button { cursor: pointer; }
 .photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .pbody .photo img { opacity: 0; transition: opacity var(--dur-2) var(--ease-standard); }
 .pbody .photo img.is-ready { opacity: 1; }   /* 사진을 다 받은 뒤에만 보임: 앞 상품 사진이 비치지 않게 */
-.seq { position: absolute; left: var(--bar-x); top: calc(var(--s-4) + 2px); color: var(--c-muted); font: 700 var(--tp-t-micro)/normal var(--f-sans); letter-spacing: .1em; font-variant-numeric: tabular-nums; }
 .next-cue { display: none; }
 
 /* 누끼 모드 (app.js layoutPhoto): 판매처 원본 + 실루엣 마스크, 상품이 칸의 80%를 채우도록 위치·크기를 인라인으로 지정 */

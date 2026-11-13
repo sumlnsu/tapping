@@ -169,8 +169,6 @@
   // 전체를 받은 뒤: 조건에 맞는 상품을 다시 세고, 보이는 화면만 갱신
   function onFullFeed() {
     baseFor = null;
-    refreshTotal();
-    if (deckReady && current) paintSeq();
     if (!$('onboard').hidden) updateCount();
     else if (view === 'home' && !$('feed').hidden) renderHome();
     if ($('likes').open) renderLikes();
@@ -205,7 +203,7 @@
   const AHEAD = 3;                         // v1.2: 1장 → 3장 (빠르게 연타해도 빈 칸이 안 보이게)
   let phase = 'idle';                      // Peel 전환: idle → peel(0~140ms) → exit(~620ms) → reset(1프레임) → idle
   let peelGen = 0;                         // 전환 도중 설정을 바꿨을 때 남은 타이머를 무시하기 위한 번호
-  let shownCount = 0, poolTotal = 0;       // 카드 왼쪽 위 순번 (이번에 본 장수 / 조건에 맞는 상품 수)
+  let shownCount = 0;                      // 이번에 본 장수 (홈의 '이어 보기'용. 카드 위 순번 표시는 2026-11-13 사용자 요청으로 뺌)
   const makeBody = () => $('tpl-body').content.firstElementChild.cloneNode(true);
   let bodyFront = makeBody(), bodyBack = makeBody();   // 카드 내용: 전환이 끝나면 앞뒤를 맞바꿔 이미지를 다시 받지 않는다
   $('front-face').prepend(bodyFront);
@@ -413,7 +411,6 @@
     if (!filled) fillBody(bodyFront, f);
     STATS.ev('view', f);
     shownCount++;
-    paintSeq();
     playBadges(bodyFront);
     $('sr-now').textContent = `${f.b} ${f.t} ${won(f.p, f.e)}`;
     setLikeBtn(likes.includes(f.id));
@@ -421,7 +418,6 @@
     $('shell-back').hidden = !nextItem;
     if (nextItem) { fillBody(bodyBack, nextItem); setTimeout(refillAhead, 0); }   // 미리 받기 고르기는 화면을 그린 다음에
   }
-  function paintSeq() { bodyFront.querySelector('.seq').textContent = `${String(shownCount).padStart(2, '0')}${fullDone ? ` / ${poolTotal < 10 ? '0' + poolTotal : poolTotal.toLocaleString()}` : ''}`; }   // 전체 개수는 feed.json을 받은 뒤
   function setAllSeen(on) {
     $('viewer').classList.toggle('is-empty', on);
     $('allseen').hidden = !on;
@@ -472,12 +468,10 @@
     $('tab-deck').setAttribute('aria-current', v === 'tap' ? 'page' : 'false');
   }
   const setFold = state => { $('today').dataset.fold = state; };
-  const refreshTotal = () => { poolTotal = base().length; };
   function relayoutDeck() { for (const b of [bodyFront, bodyBack]) if (b._f) layoutPhoto(b.querySelector('.photo'), b.querySelector('img'), b._f, FILL.feed); }
   function enterApp() {
     $('onboard').hidden = true;
     $('feed').hidden = false;
-    refreshTotal();
     const restore = history.state && history.state.view === 'tap';   // 새로고침은 보던 화면 유지, 앱 실행·첫 설정 직후는 홈
     setView(restore ? 'tap' : 'home');
     setFold('on');
@@ -739,7 +733,6 @@
     current = f;
     shownAt = Date.now();
     shownCount = Math.max(1, shownCount - 1);
-    paintSeq();
     setLikeBtn(likes.includes(f.id));
     saveResume();
     if (reduceMotion.matches) return;
@@ -926,7 +919,6 @@
     editing = false;
     dropLayer('settings');
     backToFeed();
-    refreshTotal();
     renderHome();
     if (view === 'tap') openDeck();
   });
