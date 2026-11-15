@@ -87,30 +87,7 @@
 
 /* ---------- 2. 팔레트 : 시그니처 색과 중립색 ---------- */
 /* 클래식 — Navy × Apple Blue (v1.0, 현재 기본) */
-:root, [data-palette="classic"] {
-  --c-bg: light-dark(#ffffff, #0b0d12);       --c-bg-app: light-dark(#f4f6fa, #0b0d12);
-  --c-surface: light-dark(#ffffff, #14171e);  --c-surface-2: light-dark(#f4f6fa, #1a1e27);
-  --c-surface-3: light-dark(#eceff5, #222733); --c-raised: light-dark(#ffffff, #2a303c);
-  --c-ink: light-dark(#111318, #f2f4f9);      --c-ink-2: light-dark(#3b3f48, #c6cbd5);
-  --c-muted: light-dark(#666d7d, #8a909d);
-  --c-line: light-dark(#e6e9f0, #232833);     --c-line-strong: light-dark(#cdd2dd, #343a47);
-  --c-line-control: light-dark(#8a909d, #626a7a);
-  --c-brand: light-dark(#0071e3, #2997ff);    --c-on-brand: light-dark(#ffffff, #0b0d12);
-  --c-accent: light-dark(#0071e3, #2997ff);   --c-accent-soft: light-dark(#e8f2fd, #10233d);
-  --c-accent-strong: light-dark(#0062c4, #2997ff);
-  --c-depth: #14213d;
-  --c-btn-bg: light-dark(#14213d, #f2f4f9);   --c-btn-fg: light-dark(#ffffff, #0b0d12);
-  --c-btn-hover: light-dark(#1f3260, #ffffff); --c-btn-ring: transparent;
-  --c-selection: light-dark(#cfe3fb, #1a3a66);
-  --viz-1: light-dark(#0071e3, #2997ff); --viz-2: light-dark(#d4691c, #d07a38);
-  --viz-3: light-dark(#1f9384, #36a898); --viz-4: light-dark(#8b5cf6, #9878e6);
-  --viz-focus: var(--viz-1);
-  --viz-grid: light-dark(#edf0f5, #1f242e);   --viz-axis: light-dark(#cdd2dd, #343a47);
-  --c-code-bg: light-dark(#0b0d12, #07090d);
-}
-
-/* A 코발트 — Midnight × Cobalt: 블루 취향을 잇되 '내 색'으로 */
-[data-palette="cobalt"] {
+:root, [data-palette="cobalt"] {   /* 2026-11-14 확정: 기본 시그니처 = 코발트 */
   --c-bg: light-dark(#ffffff, #080b14);       --c-bg-app: light-dark(#f3f5fa, #080b14);
   --c-surface: light-dark(#ffffff, #10141f);  --c-surface-2: light-dark(#f3f5fa, #171c2a);
   --c-surface-3: light-dark(#e9edf5, #20263a); --c-raised: light-dark(#ffffff, #262d42);
@@ -133,6 +110,29 @@
 }
 
 /* B 볼트 — Ink × Volt: 검정 위 형광 라임, 가장 대담한 한 색 */
+[data-palette="classic"] {
+  --c-bg: light-dark(#ffffff, #0b0d12);       --c-bg-app: light-dark(#f4f6fa, #0b0d12);
+  --c-surface: light-dark(#ffffff, #14171e);  --c-surface-2: light-dark(#f4f6fa, #1a1e27);
+  --c-surface-3: light-dark(#eceff5, #222733); --c-raised: light-dark(#ffffff, #2a303c);
+  --c-ink: light-dark(#111318, #f2f4f9);      --c-ink-2: light-dark(#3b3f48, #c6cbd5);
+  --c-muted: light-dark(#666d7d, #8a909d);
+  --c-line: light-dark(#e6e9f0, #232833);     --c-line-strong: light-dark(#cdd2dd, #343a47);
+  --c-line-control: light-dark(#8a909d, #626a7a);
+  --c-brand: light-dark(#0071e3, #2997ff);    --c-on-brand: light-dark(#ffffff, #0b0d12);
+  --c-accent: light-dark(#0071e3, #2997ff);   --c-accent-soft: light-dark(#e8f2fd, #10233d);
+  --c-accent-strong: light-dark(#0062c4, #2997ff);
+  --c-depth: #14213d;
+  --c-btn-bg: light-dark(#14213d, #f2f4f9);   --c-btn-fg: light-dark(#ffffff, #0b0d12);
+  --c-btn-hover: light-dark(#1f3260, #ffffff); --c-btn-ring: transparent;
+  --c-selection: light-dark(#cfe3fb, #1a3a66);
+  --viz-1: light-dark(#0071e3, #2997ff); --viz-2: light-dark(#d4691c, #d07a38);
+  --viz-3: light-dark(#1f9384, #36a898); --viz-4: light-dark(#8b5cf6, #9878e6);
+  --viz-focus: var(--viz-1);
+  --viz-grid: light-dark(#edf0f5, #1f242e);   --viz-axis: light-dark(#cdd2dd, #343a47);
+  --c-code-bg: light-dark(#0b0d12, #07090d);
+}
+
+/* A 코발트 — Midnight × Cobalt: 블루 취향을 잇되 '내 색'으로 */
 [data-palette="volt"] {
   --c-bg: light-dark(#ffffff, #0a0a0a);       --c-bg-app: light-dark(#f5f5f2, #0a0a0a);
   --c-surface: light-dark(#ffffff, #141414);  --c-surface-2: light-dark(#f5f5f2, #1b1b1b);
