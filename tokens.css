@@ -309,6 +309,18 @@
   :root { --tp-toast-top: 92px; --tp-peel-exit: 260px; --tp-hm-pad: 48px; --tp-hm-label: 15px; --tp-hm-n3: 200px; --tp-hm-n4: 168px; --tp-hm-n5: 140px; --tp-hm-sent: 40px; --tp-hm-zero: 56px; --tp-hm-zero-sub: 18px; --tp-hm-go: 16px; --tp-hm-line: 28px; --tp-hm-set: 17px; --tp-hm-fold: 96px; --tp-hm-fold-up: 120px; --tp-hm-fold-go: 136px; --tp-hm-title: 20px; --tp-hm-sec: 40px; --tp-hm-tw: 128px; --tp-hm-th: 160px; --tp-hm-tg: 12px; --tp-hm-sq: 88px; }
 }
 
+/* ---------- 부산 여행 페이지 (life/여행/2026-12_부산, 2026-11-22) : 이 페이지에서만 쓰는 값 ---------- */
+/* 사용자 결정: 이 페이지는 코발트를 머리·탭 바 큰 면에 칠하고, 이동 구간은 1호선 주황으로 (DESIGN.md 10장) */
+:root {
+  --bt-on-brand-2: color-mix(in srgb, #ffffff 88%, var(--c-brand));  /* 코발트 면 위 보조 글자 (약 4.6:1) */
+  --bt-on-brand-3: color-mix(in srgb, #ffffff 16%, transparent);     /* 코발트 면 위 옅은 면: D-day 알약, hover */
+  --bt-seg-bg: color-mix(in srgb, var(--c-depth) 30%, transparent);  /* 코발트 위 세그먼트(시간표/노선도) 바탕 */
+  --bt-line1: var(--viz-2);                                          /* 부산 지하철 1호선 (주황) */
+  --bt-time-w: 3.25rem; --bt-rail: 30px; --bt-tabs-h: 72px;          /* 시간표 시간 칸 · 레일 노드 · 고정 탭 높이 */
+  --bt-sheet-max: 88dvh; --bt-panel-w: 440px;                        /* 하단 시트 최대 높이 · 노트북 옆 패널 폭 */
+}
+@media (max-width: 379px) { :root { --bt-time-w: 2.9rem; } }
+
 /* ---------- 5. v1.0 이름 호환 (기존 화면이 깨지지 않게) ---------- */
 :root {
   --t-p-hero: var(--t-hero-num); --t-p-kpi: var(--t-kpi); --t-p-title: var(--t-h1);
